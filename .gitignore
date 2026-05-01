@@ -1,29 +1,29 @@
-# # Environment
-# .env
-# venv/
-# .venv/
-# __pycache__/
-# *.pyc
-# *.pyo
-# *.pyd
-# *.egg-info/
-# dist/
-# build/
-# .Python
+# Environment
+.env
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.Python
 
-# # Data lake — too large for git
+# Data lake — too large for git
 # data/raw/
 # data/processed/
 # data/features/
 # data/signals/
 
-# # Keep folder structure
-# !data/raw/**/.gitkeep
-# !data/processed/**/.gitkeep
-# !data/features/.gitkeep
-# !data/signals/.gitkeep
+# Keep folder structure
+!data/raw/**/.gitkeep
+!data/processed/**/.gitkeep
+!data/features/.gitkeep
+!data/signals/.gitkeep
 
-# # ML artifacts
+# ML artifacts
 # models/
 # !models/.gitkeep
 # experiments/
@@ -31,20 +31,20 @@
 # mlruns/
 # mlflow.db
 
-# # Notebooks checkpoints
-# .ipynb_checkpoints/
+# Notebooks checkpoints
+.ipynb_checkpoints/
 
-# # IDEs
-# .vscode/
-# .idea/
-# *.swp
+# IDEs
+.vscode/
+.idea/
+*.swp
 
-# # OS
-# .DS_Store
-# Thumbs.db
+# OS
+.DS_Store
+Thumbs.db
 
-# # Testing
-# .pytest_cache/
-# .coverage
-# htmlcov/
-# .mypy_cache/
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
