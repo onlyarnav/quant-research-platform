@@ -33,6 +33,7 @@ dependencies = [
     "newsapi-python>=0.2",
     "tenacity>=8.0",
     "requests>=2.31",
+    "pytest>=9.0.3",
 ]
 
 [tool.setuptools.packages.find]
