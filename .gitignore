@@ -16,6 +16,7 @@ build/
 # data/processed/
 # data/features/
 # data/signals/
+# data/universe/*.csv
 
 # Keep folder structure
 !data/raw/**/.gitkeep
