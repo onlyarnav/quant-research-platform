@@ -12,11 +12,11 @@ build/
 .Python
 
 # Data lake — too large for git
-# data/raw/
-# data/processed/
-# data/features/
-# data/signals/
-# data/universe/*.csv
+data/raw/
+data/processed/
+data/features/
+data/signals/
+data/universe/*.csv
 
 # Keep folder structure
 !data/raw/**/.gitkeep
@@ -25,12 +25,12 @@ build/
 !data/signals/.gitkeep
 
 # ML artifacts
-# models/
-# !models/.gitkeep
-# experiments/
-# !experiments/.gitkeep
-# mlruns/
-# mlflow.db
+models/
+!models/.gitkeep
+experiments/
+!experiments/.gitkeep
+mlruns/
+mlflow.db
 
 # Notebooks checkpoints
 .ipynb_checkpoints/
