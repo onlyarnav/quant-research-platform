@@ -239,7 +239,9 @@ class DataValidator:
     ) -> None:
         if "volume" not in df.columns:
             return
-        negative_count = (df["volume"].fillna(0) < 0).sum()
+        negative_count = (
+            pd.to_numeric(df["volume"], errors="coerce").fillna(0) < 0
+        ).sum()
         if negative_count > 0:
             result.add_error(
                 f"Found {negative_count} row(s) with negative volume."
