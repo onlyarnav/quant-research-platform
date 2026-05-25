@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:15
-    container_name: quant_postgres
+    container_name: quant_postgres_personal
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -26,12 +26,15 @@ services:
         condition: service_healthy
     ports:
       - "5000:5000"
-    command: >
-      mlflow server
+    entrypoint: >
+      sh -c "
+      pip install --no-cache-dir psycopg2-binary &&
+      exec mlflow server
       --host 0.0.0.0
       --port 5000
       --backend-store-uri postgresql://postgres:postgres@postgres:5432/quantdb
       --default-artifact-root /mlflow/artifacts
+      "
     volumes:
       - mlflow_data:/mlflow
     networks:
