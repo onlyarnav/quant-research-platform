@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "quant_ai_platform"
+name = "quant_research_platform"
 version = "0.1.0"
 description = "Institutional-grade quantitative AI research platform for Indian markets"
 requires-python = ">=3.12"
