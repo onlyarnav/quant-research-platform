@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres:15
-    container_name: quant_postgres_personal
+    container_name: quant_postgres_myversion
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -22,7 +22,7 @@ services:
     build:
       context: .
       dockerfile: docker/Dockerfile.mlflow
-    container_name: quant_mlflow
+    container_name: quant_mlflow_myversion
     depends_on:
       postgres:
         condition: service_healthy
@@ -32,7 +32,7 @@ services:
       mlflow server
       --host 0.0.0.0
       --port 5000
-      --backend-store-uri postgresql://postgres:postgres@postgres:5432/quantdb
+      --backend-store-uri postgresql://postgres:postgres@postgres:5432/mlflowdb
       --default-artifact-root /mlflow/artifacts
     volumes:
       - mlflow_data:/mlflow
