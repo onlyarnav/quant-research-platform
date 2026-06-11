@@ -51,6 +51,12 @@ class AssetRepository:
             )
         )
 
+        if asset is None:
+            raise RuntimeError(
+                f"Upsert succeeded but fetch failed: "
+                f"symbol={data['symbol']} exchange={data['exchange']}"
+            )
+
         logger.info(
             "Upserted asset symbol=%s exchange=%s",
             data["symbol"],
