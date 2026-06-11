@@ -10,8 +10,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.utils.logger import get_logger
 from src.database.models.price import Price
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
