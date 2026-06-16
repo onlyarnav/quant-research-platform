@@ -14,16 +14,6 @@ from sqlalchemy.orm import Session
 
 from config.settings import settings
 
-from src.database.base import Base
-
-# Import all models so they register with Base.metadata
-from src.database.models.asset import Asset  # noqa: F401
-from src.database.models.feature import Feature  # noqa: F401
-from src.database.models.portfolio_metric import PortfolioMetric  # noqa: F401
-from src.database.models.price import Price  # noqa: F401
-from src.database.models.signal import Signal  # noqa: F401
-from src.database.models.trade import Trade  # noqa: F401
-
 from src.database.repository import (
     AssetRepository,
     FeatureRepository,
@@ -36,22 +26,9 @@ from src.database.repository import (
 
 @pytest.fixture()
 def engine():
-    """
-    Create database engine and tables once
-    per test session.
-    """
-
-    engine = create_engine(
-        settings.DATABASE_URL,
-    )
-
-    Base.metadata.create_all(engine)
-
-    yield engine
-
-    Base.metadata.drop_all(engine)
-
-    engine.dispose()
+    _engine = create_engine(settings.DATABASE_URL)
+    yield _engine
+    _engine.dispose()
 
 
 @pytest.fixture()
