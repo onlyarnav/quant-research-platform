@@ -95,5 +95,13 @@ class ModelEvaluator:
         metric in quant research to assess the quality of a signal.
         """
         ModelEvaluator._validate_inputs(y_true, y_pred)
+
+        if np.std(y_true) == 0 or np.std(y_pred) == 0:
+            logger.warning(
+                "Cannot compute information coefficient: "
+                "y_true or y_pred is constant (zero variance)."
+            )
+            return float("nan")
+
         corr, _ = spearmanr(y_true, y_pred)
         return float(corr)

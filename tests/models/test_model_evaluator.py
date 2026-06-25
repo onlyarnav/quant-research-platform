@@ -114,6 +114,16 @@ def test_ic_within_valid_bounds(evaluator):
     y_pred = np.array(rng.standard_normal(100))
     ic = evaluator.information_coefficient(y_true, y_pred)
     assert -1.0 <= ic <= 1.0
+    
+def test_ic_returns_nan_for_constant_predictions(evaluator, caplog):
+    """Assert IC returns NaN and logs a warning when y_pred is constant."""
+    y_true = pd.Series([1.0, 2.0, 3.0, 4.0])
+    y_pred = np.zeros(4)
+
+    result = evaluator.information_coefficient(y_true, y_pred)
+
+    assert np.isnan(result)
+    assert any("constant" in rec.message.lower() for rec in caplog.records)
 
 def test_evaluate_returns_all_six_keys(evaluator):
     """Assert the evaluate() method returns all expected metrics."""
