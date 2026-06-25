@@ -111,7 +111,6 @@ def main() -> None:
         processing_report.failed,
     )
 
-    # ── Summary ───────────────────────────────────────────────
     logger.info("=" * 60)
     logger.info("PIPELINE SUMMARY")
     logger.info("Ingestion  — succeeded=%s failed=%s", ingestion_report.succeeded, ingestion_report.failed)
