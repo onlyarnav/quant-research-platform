@@ -32,6 +32,10 @@ experiments/
 mlruns/
 mlflow.db
 
+# src and test ML models
+!src/models/
+!tests/models
+
 # Notebooks checkpoints
 .ipynb_checkpoints/
 

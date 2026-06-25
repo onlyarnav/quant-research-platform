@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     MODEL_LOOKBACK_WINDOW: int = Field(default=252)
     MODEL_PREDICTION_HORIZON: int = Field(default=1)
     MODEL_RETRAIN_INTERVAL_DAYS: int = Field(default=7)
+    TRAIN_SPLIT_RATIO: float = Field(default=0.7)
+    VAL_SPLIT_RATIO: float = Field(default=0.15)
 
     # ── Backtesting ───────────────────────────────────────────
     TRANSACTION_COST: float = Field(default=0.001)
