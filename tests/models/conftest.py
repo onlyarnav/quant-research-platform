@@ -53,3 +53,17 @@ def tmp_features_dir(tmp_path):
         df.to_parquet(file_path, index=False)
 
     return features_dir
+
+@pytest.fixture
+def regression_data():
+    """
+    Shared synthetic train/val/test data for ML model wrapper tests.
+    """
+    rng = np.random.default_rng(7)
+    X_train = pd.DataFrame(rng.standard_normal((50, 4)), columns=["f1", "f2", "f3", "f4"])
+    y_train = pd.Series(rng.standard_normal(50))
+    X_val = pd.DataFrame(rng.standard_normal((10, 4)), columns=["f1", "f2", "f3", "f4"])
+    y_val = pd.Series(rng.standard_normal(10))
+    X_test = pd.DataFrame(rng.standard_normal((10, 4)), columns=["f1", "f2", "f3", "f4"])
+    y_test = pd.Series(rng.standard_normal(10))
+    return X_train, y_train, X_val, y_val, X_test, y_test
