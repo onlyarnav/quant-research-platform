@@ -59,6 +59,8 @@ def test_run_calls_dataset_builder_build_with_horizon(mocker, regression_data):
     mock_builder = mocker.MagicMock(spec=DatasetBuilder)
     mock_builder.build.return_value = splits
 
+    mocker.patch("src.models.training_pipeline.mlflow")
+
     pipeline = TrainingPipeline(dataset_builder=mock_builder)
     model = DummyTrainingModel()
     pipeline.run(model, horizon=1)
@@ -72,6 +74,8 @@ def test_run_fits_model_with_correct_splits(mocker, regression_data):
 
     mock_builder = mocker.MagicMock(spec=DatasetBuilder)
     mock_builder.build.return_value = splits
+
+    mocker.patch("src.models.training_pipeline.mlflow")
 
     pipeline = TrainingPipeline(dataset_builder=mock_builder)
     model = DummyTrainingModel()
@@ -96,6 +100,8 @@ def test_run_calls_predict_on_val_and_test(mocker, regression_data):
     mock_builder = mocker.MagicMock(spec=DatasetBuilder)
     mock_builder.build.return_value = splits
 
+    mocker.patch("src.models.training_pipeline.mlflow")
+
     pipeline = TrainingPipeline(dataset_builder=mock_builder)
     model = DummyTrainingModel()
 
@@ -111,6 +117,8 @@ def test_run_returns_test_metrics_dict(mocker, regression_data):
 
     mock_builder = mocker.MagicMock(spec=DatasetBuilder)
     mock_builder.build.return_value = splits
+
+    mocker.patch("src.models.training_pipeline.mlflow")
 
     pipeline = TrainingPipeline(dataset_builder=mock_builder)
     model = DummyTrainingModel()
