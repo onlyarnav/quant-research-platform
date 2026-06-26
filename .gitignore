@@ -13,6 +13,7 @@ build/
 
 # Data lake — too large for git
 data/raw/
+data/predictions/
 data/processed/
 data/features/
 data/signals/
