@@ -66,4 +66,26 @@ def regression_data():
     y_val = pd.Series(rng.standard_normal(10))
     X_test = pd.DataFrame(rng.standard_normal((10, 4)), columns=["f1", "f2", "f3", "f4"])
     y_test = pd.Series(rng.standard_normal(10))
-    return X_train, y_train, X_val, y_val, X_test, y_test
+
+@pytest.fixture
+def fitted_dummy_model():
+    """A pre-fitted dummy model for prediction pipeline tests."""
+    from src.models.base_model import BaseModel
+
+    class DummyPredictModel(BaseModel):
+        def fit(self, X_train, y_train, X_val=None, y_val=None) -> None:
+            self._model = "fitted"
+            self._is_fitted = True
+
+        def predict(self, X):
+            self._check_is_fitted()
+            # Return predictable, deterministic values for assertions
+            return np.arange(len(X), dtype=float) * 0.01
+
+        @property
+        def model_type(self) -> str:
+            return "dummy"
+
+    model = DummyPredictModel(model_name="dummy_predict_model")
+    model.fit(pd.DataFrame({"f1": [1, 2, 3]}), pd.Series([0.1, 0.2, 0.3]))
+    return model
