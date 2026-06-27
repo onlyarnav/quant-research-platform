@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     # ── Backtesting ───────────────────────────────────────────
     TRANSACTION_COST: float = Field(default=0.001)
     SLIPPAGE: float = Field(default=0.0005)
+    INITIAL_CAPITAL: float = Field(default=1_000_000.0)
 
     # ── Portfolio ─────────────────────────────────────────────
     PORTFOLIO_RISK_FREE_RATE: float = Field(default=0.07)
