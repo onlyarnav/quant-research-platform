@@ -68,3 +68,15 @@ class PerformanceMetrics:
         if initial_val <= 0:
             raise ValueError("Initial portfolio value must be greater than 0.")
         return (final_val / initial_val) - 1.0
+
+    def annualized_return(self, portfolio_history_df: pd.DataFrame) -> float:
+        """Compute annualized compound return over portfolio history."""
+        self._validate_portfolio_history(portfolio_history_df)
+        tot_ret = self.total_return(portfolio_history_df)
+        num_days = len(portfolio_history_df)
+        if num_days == 1:
+            logger.warning(
+                "Annualization is not meaningful with a single data point; returning total return directly."
+            )
+            return tot_ret
+        return float((1.0 + tot_ret) ** (self.trading_days_per_year / num_days) - 1.0)
