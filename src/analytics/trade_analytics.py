@@ -133,3 +133,103 @@ class TradeAnalytics:
             return float("inf")
 
         return total_win / abs(total_loss)
+
+    def expectancy(self, trades_df: pd.DataFrame) -> float:
+        """
+        Compute expected PnL per trade: (win_rate * average_win) + (loss_rate * average_loss).
+
+        Args:
+            trades_df: DataFrame containing trade records.
+
+        Returns:
+            Expected PnL float per trade.
+
+        Raises:
+            ValueError: If trades_df is empty or missing required columns.
+        """
+        self._validate_trades_df(trades_df)
+        w_rate = self.win_rate(trades_df)
+        l_rate = self.loss_rate(trades_df)
+        avg_w = self.average_win(trades_df)
+        avg_l = self.average_loss(trades_df)
+        return (w_rate * avg_w) + (l_rate * avg_l)
+
+    def average_trade_duration(self, trades_df: pd.DataFrame) -> pd.Timedelta:
+        """
+        Compute mean duration between entry_date and exit_date.
+
+        Args:
+            trades_df: DataFrame containing trade records.
+
+        Returns:
+            Average trade duration as pd.Timedelta.
+
+        Raises:
+            ValueError: If trades_df is empty or missing required columns.
+        """
+        self._validate_trades_df(trades_df)
+        durations = pd.to_datetime(trades_df["exit_date"]) - pd.to_datetime(
+            trades_df["entry_date"]
+        )
+        mean_dur = durations.mean()
+        return mean_dur if isinstance(mean_dur, pd.Timedelta) else pd.Timedelta(mean_dur)
+
+    def total_trades(self, trades_df: pd.DataFrame) -> int:
+        """
+        Get total number of trades.
+
+        Args:
+            trades_df: DataFrame containing trade records.
+
+        Returns:
+            Number of trades integer.
+
+        Raises:
+            ValueError: If trades_df is empty or missing required columns.
+        """
+        self._validate_trades_df(trades_df)
+        return int(len(trades_df))
+
+    def total_pnl(self, trades_df: pd.DataFrame) -> float:
+        """
+        Compute cumulative sum of trade PnL.
+
+        Args:
+            trades_df: DataFrame containing trade records.
+
+        Returns:
+            Total PnL float.
+
+        Raises:
+            ValueError: If trades_df is empty or missing required columns.
+        """
+        self._validate_trades_df(trades_df)
+        return float(trades_df["pnl"].sum())
+
+    def compute_all(
+        self, trades_df: pd.DataFrame
+    ) -> dict[str, float | int | pd.Timedelta]:
+        """
+        Compute all trade analytics metrics into a dictionary.
+
+        Args:
+            trades_df: DataFrame containing trade records.
+
+        Returns:
+            Dictionary containing trade statistics.
+
+        Raises:
+            ValueError: If trades_df is empty or missing required columns.
+        """
+        self._validate_trades_df(trades_df)
+        return {
+            "total_trades": self.total_trades(trades_df),
+            "win_rate": self.win_rate(trades_df),
+            "loss_rate": self.loss_rate(trades_df),
+            "average_win": self.average_win(trades_df),
+            "average_loss": self.average_loss(trades_df),
+            "profit_factor": self.profit_factor(trades_df),
+            "expectancy": self.expectancy(trades_df),
+            "average_trade_duration": self.average_trade_duration(trades_df),
+            "total_pnl": self.total_pnl(trades_df),
+        }
