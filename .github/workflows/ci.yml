@@ -11,6 +11,7 @@ jobs:
     name: Codebase Verification & Tests
     runs-on: ubuntu-latest
     env:
+      PYTHONPATH: .
       DATABASE_URL: "sqlite:///:memory:"
 
     steps:
@@ -30,4 +31,4 @@ jobs:
 
       - name: Run Analytics, Dashboard, and Infra Test Suites
         run: |
-          pytest tests/analytics/ tests/dashboard/ tests/infra/ -v
+          python -m pytest tests/analytics/ tests/dashboard/ tests/infra/ -v
