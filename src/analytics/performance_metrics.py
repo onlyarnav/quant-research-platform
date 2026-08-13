@@ -149,3 +149,60 @@ class PerformanceMetrics:
             logger.warning("Cannot compute Calmar ratio: max drawdown is zero.")
             return float("nan")
         return ann_ret / abs(mdd)
+
+    def value_at_risk(
+        self, portfolio_history_df: pd.DataFrame, confidence_level: float = 0.95
+    ) -> float:
+        """Compute historical Value at Risk (VaR)."""
+        self._validate_portfolio_history(portfolio_history_df)
+        if not (0.0 < confidence_level < 1.0):
+            raise ValueError("confidence_level must be between 0 and 1 exclusive.")
+        return float(
+            portfolio_history_df["daily_return"].quantile(1.0 - confidence_level)
+        )
+
+    def conditional_value_at_risk(
+        self, portfolio_history_df: pd.DataFrame, confidence_level: float = 0.95
+    ) -> float:
+        """Compute Conditional Value at Risk (CVaR / Expected Shortfall)."""
+        self._validate_portfolio_history(portfolio_history_df)
+        var_val = self.value_at_risk(portfolio_history_df, confidence_level=confidence_level)
+        tail_returns = portfolio_history_df[
+            portfolio_history_df["daily_return"] <= var_val
+        ]["daily_return"]
+        if tail_returns.empty:
+            logger.debug(
+                "No returns found at or below VaR threshold; returning VaR value."
+            )
+            return var_val
+        return float(tail_returns.mean())
+
+    def compute_all(
+        self, portfolio_history_df: pd.DataFrame
+    ) -> dict[str, float]:
+        """Compute all portfolio performance and risk metrics into a dictionary."""
+        self._validate_portfolio_history(
+            portfolio_history_df, required_extra_cols={"drawdown"}
+        )
+        sharpe = self.sharpe_ratio(portfolio_history_df)
+        mdd = self.max_drawdown(portfolio_history_df)
+        logger.info(
+            "Computed performance metrics: sharpe=%s, max_drawdown=%s",
+            sharpe,
+            mdd,
+        )
+        return {
+            "total_return": self.total_return(portfolio_history_df),
+            "annualized_return": self.annualized_return(portfolio_history_df),
+            "annualized_volatility": self.annualized_volatility(portfolio_history_df),
+            "sharpe_ratio": sharpe,
+            "sortino_ratio": self.sortino_ratio(portfolio_history_df),
+            "max_drawdown": mdd,
+            "calmar_ratio": self.calmar_ratio(portfolio_history_df),
+            "value_at_risk_95": self.value_at_risk(
+                portfolio_history_df, confidence_level=0.95
+            ),
+            "conditional_value_at_risk_95": self.conditional_value_at_risk(
+                portfolio_history_df, confidence_level=0.95
+            ),
+        }
