@@ -59,3 +59,12 @@ class PerformanceMetrics:
         missing = required_cols - set(portfolio_history_df.columns)
         if missing:
             raise ValueError(f"portfolio_history_df missing required columns: {missing}")
+
+    def total_return(self, portfolio_history_df: pd.DataFrame) -> float:
+        """Compute cumulative total return over portfolio history."""
+        self._validate_portfolio_history(portfolio_history_df)
+        initial_val = float(portfolio_history_df["portfolio_value"].iloc[0])
+        final_val = float(portfolio_history_df["portfolio_value"].iloc[-1])
+        if initial_val <= 0:
+            raise ValueError("Initial portfolio value must be greater than 0.")
+        return (final_val / initial_val) - 1.0
