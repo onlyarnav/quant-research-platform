@@ -38,3 +38,35 @@ class TradeAnalytics:
         missing = required_cols - set(trades_df.columns)
         if missing:
             raise ValueError(f"trades_df missing required columns: {missing}")
+
+    def win_rate(self, trades_df: pd.DataFrame) -> float:
+        """
+        Compute fraction of trades with pnl > 0.
+
+        Args:
+            trades_df: DataFrame containing trade records.
+
+        Returns:
+            Win rate fraction.
+
+        Raises:
+            ValueError: If trades_df is empty or missing required columns.
+        """
+        self._validate_trades_df(trades_df)
+        return float((trades_df["pnl"] > 0).sum() / len(trades_df))
+
+    def loss_rate(self, trades_df: pd.DataFrame) -> float:
+        """
+        Compute fraction of trades with pnl < 0.
+
+        Args:
+            trades_df: DataFrame containing trade records.
+
+        Returns:
+            Loss rate fraction.
+
+        Raises:
+            ValueError: If trades_df is empty or missing required columns.
+        """
+        self._validate_trades_df(trades_df)
+        return float((trades_df["pnl"] < 0).sum() / len(trades_df))
