@@ -97,3 +97,36 @@ class PerformanceMetrics:
             )
             return float("nan")
         return daily_std * math.sqrt(self.trading_days_per_year)
+
+    def sharpe_ratio(self, portfolio_history_df: pd.DataFrame) -> float:
+        """Compute annualized Sharpe ratio."""
+        self._validate_portfolio_history(portfolio_history_df)
+        ann_ret = self.annualized_return(portfolio_history_df)
+        ann_vol = self.annualized_volatility(portfolio_history_df)
+        if math.isnan(ann_vol) or ann_vol == 0.0:
+            logger.warning(
+                "Cannot compute Sharpe ratio: annualized volatility is zero or undefined."
+            )
+            return float("nan")
+        return (ann_ret - self.risk_free_rate) / ann_vol
+
+    def sortino_ratio(self, portfolio_history_df: pd.DataFrame) -> float:
+        """Compute annualized Sortino ratio using negative returns (< 0) for downside risk."""
+        self._validate_portfolio_history(portfolio_history_df)
+        ann_ret = self.annualized_return(portfolio_history_df)
+        neg_returns = portfolio_history_df[portfolio_history_df["daily_return"] < 0]["daily_return"]
+        if len(neg_returns) == 0:
+            logger.warning(
+                "No downside deviation observed (no negative daily returns); Sortino ratio undefined."
+            )
+            return float("nan")
+
+        downside_std = float(neg_returns.std(ddof=1))
+        if math.isnan(downside_std) or downside_std == 0.0:
+            logger.warning(
+                "Cannot compute Sortino ratio: downside volatility is zero or undefined."
+            )
+            return float("nan")
+
+        downside_vol = downside_std * math.sqrt(self.trading_days_per_year)
+        return (ann_ret - self.risk_free_rate) / downside_vol
