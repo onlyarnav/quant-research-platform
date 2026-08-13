@@ -130,3 +130,22 @@ class PerformanceMetrics:
 
         downside_vol = downside_std * math.sqrt(self.trading_days_per_year)
         return (ann_ret - self.risk_free_rate) / downside_vol
+
+    def max_drawdown(self, portfolio_history_df: pd.DataFrame) -> float:
+        """Extract maximum drawdown from drawdown column."""
+        self._validate_portfolio_history(
+            portfolio_history_df, required_extra_cols={"drawdown"}
+        )
+        return float(portfolio_history_df["drawdown"].min())
+
+    def calmar_ratio(self, portfolio_history_df: pd.DataFrame) -> float:
+        """Compute Calmar ratio."""
+        self._validate_portfolio_history(
+            portfolio_history_df, required_extra_cols={"drawdown"}
+        )
+        ann_ret = self.annualized_return(portfolio_history_df)
+        mdd = self.max_drawdown(portfolio_history_df)
+        if mdd == 0.0 or abs(mdd) == 0.0:
+            logger.warning("Cannot compute Calmar ratio: max drawdown is zero.")
+            return float("nan")
+        return ann_ret / abs(mdd)
