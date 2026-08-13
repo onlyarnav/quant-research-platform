@@ -28,7 +28,9 @@ class Settings(BaseSettings):
     )
 
     # ── Database ──────────────────────────────────────────────
-    DATABASE_URL: str
+    DATABASE_URL: str = Field(
+        default="postgresql://postgres:postgres@localhost:5432/quant_research"
+    )
 
     # ── External API Keys (optional integrations) ─────────────
     ALPHA_VANTAGE_KEY: str = Field(default="")
