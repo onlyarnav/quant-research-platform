@@ -80,3 +80,20 @@ class PerformanceMetrics:
             )
             return tot_ret
         return float((1.0 + tot_ret) ** (self.trading_days_per_year / num_days) - 1.0)
+
+    def annualized_volatility(self, portfolio_history_df: pd.DataFrame) -> float:
+        """Compute annualized volatility of daily returns."""
+        self._validate_portfolio_history(portfolio_history_df)
+        if len(portfolio_history_df) < 2:
+            logger.warning(
+                "Fewer than 2 rows in portfolio history; annualized volatility is undefined."
+            )
+            return float("nan")
+
+        daily_std = float(portfolio_history_df["daily_return"].std(ddof=1))
+        if math.isnan(daily_std):
+            logger.warning(
+                "Daily return standard deviation is NaN; annualized volatility is undefined."
+            )
+            return float("nan")
+        return daily_std * math.sqrt(self.trading_days_per_year)
