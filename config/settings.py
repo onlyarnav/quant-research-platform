@@ -86,7 +86,7 @@ class Settings(BaseSettings):
     PIPELINE_TIMEZONE: str = Field(default="Asia/Kolkata")
 
     # ── MLflow ────────────────────────────────────────────────
-    MLFLOW_TRACKING_URI: str = Field(default="http://localhost:5000")
+    MLFLOW_TRACKING_URI: str = Field(default="sqlite:///mlflow.db")
 
     # ── Validators ────────────────────────────────────────────
     @field_validator("DATA_UPDATE_MODE")

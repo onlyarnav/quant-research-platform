@@ -129,7 +129,7 @@ def _load_portfolio_history_impl(strategy_name: str) -> pd.DataFrame:
         )
 
     pivoted = raw_df.pivot(index="calculated_at", columns="metric", values="value").reset_index()
-    pivoted.rename(columns={"calculated_at": "date"}, inplace=True)
+    pivoted = pivoted.rename(columns={"calculated_at": "date"})
 
     for col in expected_cols:
         if col not in pivoted.columns:
