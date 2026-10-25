@@ -59,7 +59,7 @@ class BacktestingEngine:
 
     def __init__(
         self,
-        capital_per_trade: float | None =None,
+        capital_per_trade: float | None = None,
         transaction_cost: float | None = None,
         slippage: float | None = None,
     ) -> None:
@@ -67,27 +67,23 @@ class BacktestingEngine:
         Args:
             capital_per_trade:
                 Capital allocated to each new position.
-                Defaults to
-                settings.INITIAL_CAPITAL * settings.MAX_POSITION_SIZE.
+                Defaults to settings.INITIAL_CAPITAL * settings.MAX_POSITION_SIZE.
             transaction_cost:
                 Fractional transaction cost applied per trade leg.
             slippage:
                 Fractional adverse execution slippage.
         """
-        self.capital_per_trade = capital_per_trade or (
-            settings.INITIAL_CAPITAL * settings.MAX_POSITION_SIZE
+        self.capital_per_trade = (
+            capital_per_trade
+            if capital_per_trade is not None
+            else settings.INITIAL_CAPITAL * settings.MAX_POSITION_SIZE
         )
-
         self.transaction_cost = (
             transaction_cost
             if transaction_cost is not None
             else settings.TRANSACTION_COST
         )
-
-        self.slippage = (
-            slippage if slippage is not None else settings.SLIPPAGE
-        )
-
+        self.slippage = slippage if slippage is not None else settings.SLIPPAGE
         self._trade_id_counter = itertools.count(1)
 
     def run(
@@ -101,7 +97,6 @@ class BacktestingEngine:
         Args:
             signals_df:
                 Signal dataframe containing BUY/HOLD/SELL signals.
-
             prices_df:
                 Price dataframe used for trade execution.
 
@@ -110,32 +105,22 @@ class BacktestingEngine:
         """
         if signals_df.empty:
             raise ValueError("signals_df cannot be empty.")
-
         if prices_df.empty:
             raise ValueError("prices_df cannot be empty.")
 
         required_signal_cols = {"symbol", "date", "signal"}
         missing = required_signal_cols - set(signals_df.columns)
-
         if missing:
-            raise ValueError(
-                f"signals_df missing required columns: {missing}"
-            )
+            raise ValueError(f"signals_df missing required columns: {missing}")
 
         required_price_cols = {"symbol", "date", "close"}
         missing = required_price_cols - set(prices_df.columns)
-
         if missing:
-            raise ValueError(
-                f"prices_df missing required columns: {missing}"
-            )
+            raise ValueError(f"prices_df missing required columns: {missing}")
 
         prices = prices_df.copy()
-
         if "adj_close" in prices.columns:
-            prices["execution_price"] = prices["adj_close"].fillna(
-                prices["close"]
-            )
+            prices["execution_price"] = prices["adj_close"].fillna(prices["close"])
         else:
             prices["execution_price"] = prices["close"]
 
@@ -148,38 +133,21 @@ class BacktestingEngine:
 
         if merged.empty:
             raise ValueError(
-                "No overlapping (symbol, date) rows between "
-                "signals_df and prices_df."
+                "No overlapping (symbol, date) rows between signals_df and prices_df."
             )
 
-        merged = (
-            merged.sort_values(["symbol", "date"])
-            .reset_index(drop=True)
-        )
-
-        logger.info(
-            "Running backtest for %d symbols.",
-            merged["symbol"].nunique(),
-        )
+        merged = merged.sort_values(["symbol", "date"]).reset_index(drop=True)
+        logger.info("Running backtest for %d symbols.", merged["symbol"].nunique())
 
         all_trades: list[Trade] = []
-
         for symbol, group in merged.groupby("symbol", sort=False):
             all_trades.extend(self._simulate_symbol(symbol, group))
 
         if not all_trades:
-            logger.warning(
-                "Backtest produced zero trades across all symbols."
-            )
+            logger.warning("Backtest produced zero trades across all symbols.")
 
-        trades_df = pd.DataFrame(
-            [asdict(trade) for trade in all_trades]
-        )
-
-        logger.info(
-            "Backtest completed with %d trades.",
-            len(all_trades),
-        )
+        trades_df = pd.DataFrame([asdict(trade) for trade in all_trades])
+        logger.info("Backtest completed with %d trades.", len(all_trades))
 
         return BacktestResult(
             trades=all_trades,
@@ -195,13 +163,10 @@ class BacktestingEngine:
         Walk through a single symbol chronologically.
 
         Opens a position on BUY when flat and closes on SELL when
-        holding a position.
-
-        Open positions at the end of the dataset are force-closed
-        using the final available price.
+        holding a position. Open positions at the end of the dataset
+        are force-closed using the final available price.
         """
         trades: list[Trade] = []
-
         open_entry_date: pd.Timestamp | None = None
         open_entry_price: float | None = None
 
@@ -220,13 +185,11 @@ class BacktestingEngine:
                         raw_exit_price=row["execution_price"],
                     )
                 )
-
                 open_entry_date = None
                 open_entry_price = None
 
         if open_entry_date is not None:
             last_row = group.iloc[-1]
-
             logger.warning(
                 "Symbol=%s has an open position at end of data "
                 "(entry_date=%s). Force-closing at last available "
@@ -236,7 +199,6 @@ class BacktestingEngine:
                 last_row["execution_price"],
                 last_row["date"],
             )
-
             trades.append(
                 self._build_trade(
                     symbol=symbol,
@@ -263,7 +225,6 @@ class BacktestingEngine:
         Slippage always works against the trader by increasing the
         effective entry price and decreasing the effective exit price.
         """
-
         if raw_entry_price <= 0 or raw_exit_price <= 0:
             raise ValueError(
                 f"Invalid price for symbol={symbol}: "
@@ -273,27 +234,17 @@ class BacktestingEngine:
 
         executed_entry_price = raw_entry_price * (1 + self.slippage)
         executed_exit_price = raw_exit_price * (1 - self.slippage)
+        position_size = self.capital_per_trade / executed_entry_price
 
-        position_size = (
-            self.capital_per_trade / executed_entry_price
-        )
-
-        slippage_cost = (
-            (executed_entry_price - raw_entry_price) * position_size
-            + (raw_exit_price - executed_exit_price) * position_size
-        )
-
+        slippage_cost = (executed_entry_price - raw_entry_price) * position_size + (
+            raw_exit_price - executed_exit_price
+        ) * position_size
         fees = (
             self.transaction_cost
             * (executed_entry_price + executed_exit_price)
             * position_size
         )
-
-        pnl = (
-            (executed_exit_price - executed_entry_price)
-            * position_size
-            - fees
-        )
+        pnl = (executed_exit_price - executed_entry_price) * position_size - fees
 
         return Trade(
             trade_id=next(self._trade_id_counter),

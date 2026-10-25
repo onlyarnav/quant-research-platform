@@ -67,36 +67,33 @@ class PortfolioSimulator:
     ) -> None:
         """
         Args:
-            initial_capital: Total portfolio capital. Defaults to
-                settings.INITIAL_CAPITAL.
-            max_position_size: Max fraction of capital per position.
-                Defaults to settings.MAX_POSITION_SIZE.
-            transaction_cost: Fractional cost per trade leg. Defaults
-                to settings.TRANSACTION_COST.
-            slippage: Fractional adverse execution slippage. Defaults
-                to settings.SLIPPAGE.
+            initial_capital: Total capital. Defaults to settings.INITIAL_CAPITAL.
+            max_position_size: Max fraction per pos (settings.MAX_POSITION_SIZE).
+            transaction_cost: Fractional cost (settings.TRANSACTION_COST).
+            slippage: Adverse execution slippage (settings.SLIPPAGE).
         """
-        self.initial_capital = (
-            initial_capital if initial_capital is not None else settings.INITIAL_CAPITAL
-        )
+        cap = settings.INITIAL_CAPITAL
+        self.initial_capital = initial_capital if initial_capital is not None else cap
+        max_pos = settings.MAX_POSITION_SIZE
         self.max_position_size = (
-            max_position_size if max_position_size is not None else settings.MAX_POSITION_SIZE
+            max_position_size if max_position_size is not None else max_pos
         )
-        self.transaction_cost = (
-            transaction_cost if transaction_cost is not None else settings.TRANSACTION_COST
-        )
-        self.slippage = slippage if slippage is not None else settings.SLIPPAGE
+        tc = settings.TRANSACTION_COST
+        self.transaction_cost = transaction_cost if transaction_cost is not None else tc
+        sl = settings.SLIPPAGE
+        self.slippage = slippage if slippage is not None else sl
 
         self.position_manager = PositionManager(
             initial_capital=self.initial_capital,
             max_position_size=self.max_position_size,
         )
-
         self._trade_id_counter = itertools.count(1)
         self._last_known_price: dict[str, float] = {}
         self._raw_entry_prices: dict[str, float] = {}
 
-    def run(self, signals_df: pd.DataFrame, prices_df: pd.DataFrame) -> PortfolioSimulationResult:
+    def run(
+        self, signals_df: pd.DataFrame, prices_df: pd.DataFrame
+    ) -> PortfolioSimulationResult:
         """
         Run a capital-constrained portfolio simulation.
 
@@ -106,12 +103,10 @@ class PortfolioSimulator:
                 optionally 'adj_close') columns.
 
         Returns:
-            PortfolioSimulationResult with realized trades and the
-            daily portfolio history.
+            PortfolioSimulationResult with realized trades and portfolio history.
 
         Raises:
-            ValueError: If inputs are empty, missing required columns,
-                or have no overlapping (symbol, date) rows.
+            ValueError: If inputs empty, missing cols, or have no overlap.
         """
         self._validate_inputs(signals_df, prices_df)
         prices = self._add_execution_price(prices_df)
@@ -122,7 +117,6 @@ class PortfolioSimulator:
             on=["symbol", "date"],
             how="inner",
         )
-
         if merged.empty:
             raise ValueError(
                 "No overlapping (symbol, date) rows between signals_df and prices_df."
@@ -130,7 +124,6 @@ class PortfolioSimulator:
 
         events = merged[merged["signal"] != 0].sort_values(["date", "symbol"])
         prices_sorted = prices.sort_values(["date", "symbol"])
-
         all_dates = sorted(prices["date"].unique())
         prices_by_date = {k: v for k, v in prices_sorted.groupby("date")}
         events_by_date = {k: v for k, v in events.groupby("date")}
@@ -153,27 +146,32 @@ class PortfolioSimulator:
 
             if current_date in events_by_date:
                 day_events = events_by_date[current_date]
-
                 for _, row in day_events[day_events["signal"] == -1].iterrows():
                     symbol = row["symbol"]
                     if symbol in self.position_manager.get_open_positions():
                         trades.append(
-                            self._close_and_record(symbol, current_date, row["execution_price"])
+                            self._close_and_record(
+                                symbol, current_date, row["execution_price"]
+                            )
                         )
-
                 for _, row in day_events[day_events["signal"] == 1].iterrows():
-                    self._open_and_record(row["symbol"], current_date, row["execution_price"])
+                    self._open_and_record(
+                        row["symbol"], current_date, row["execution_price"]
+                    )
 
             invested_capital = sum(
                 pos.position_size * self._last_known_price.get(sym, pos.entry_price)
                 for sym, pos in self.position_manager.get_open_positions().items()
             )
             portfolio_value = self.position_manager.cash + invested_capital
-
             daily_return = (portfolio_value / prev_value - 1) if prev_value > 0 else 0.0
             cumulative_return = portfolio_value / self.initial_capital - 1
             running_max = max(running_max, portfolio_value)
-            drawdown = (portfolio_value - running_max) / running_max if running_max > 0 else 0.0
+            drawdown = (
+                (portfolio_value - running_max) / running_max
+                if running_max > 0
+                else 0.0
+            )
 
             history.append(
                 PortfolioSnapshot(
@@ -189,13 +187,11 @@ class PortfolioSimulator:
             prev_value = portfolio_value
 
         self._force_close_remaining(all_dates[-1], trades)
-
         if not trades:
             logger.warning("Portfolio simulation produced zero trades.")
 
         trades_df = pd.DataFrame([asdict(t) for t in trades])
         history_df = pd.DataFrame([asdict(s) for s in history])
-
         logger.info(
             "Portfolio simulation completed with %d trades over %d days.",
             len(trades),
@@ -209,12 +205,13 @@ class PortfolioSimulator:
             portfolio_history_df=history_df,
         )
 
-    def _open_and_record(self, symbol: str, entry_date: pd.Timestamp, raw_entry_price: float) -> None:
+    def _open_and_record(
+        self, symbol: str, entry_date: pd.Timestamp, raw_entry_price: float
+    ) -> None:
         """Open a position if capital constraints allow; no-op otherwise."""
         if not self.position_manager.can_open_position(symbol):
             logger.debug(
-                "Skipping BUY for symbol=%s on %s — cannot open "
-                "(already open or insufficient cash).",
+                "Skipping BUY symbol=%s on %s (already open or insufficient cash).",
                 symbol,
                 entry_date,
             )
@@ -240,9 +237,10 @@ class PortfolioSimulator:
         self.position_manager.cash -= fees
 
         slippage_cost = (
-            (closed.entry_price - raw_entry_price) * closed.position_size
-            + (raw_exit_price - executed_exit_price) * closed.position_size
-        )
+            closed.entry_price - raw_entry_price
+        ) * closed.position_size + (
+            raw_exit_price - executed_exit_price
+        ) * closed.position_size
         pnl = (executed_exit_price - closed.entry_price) * closed.position_size - fees
 
         return Trade(
@@ -259,15 +257,14 @@ class PortfolioSimulator:
             return_pct=pnl / (closed.entry_price * closed.position_size),
         )
 
-    def _force_close_remaining(self, last_date: pd.Timestamp, trades: list[Trade]) -> None:
+    def _force_close_remaining(
+        self, last_date: pd.Timestamp, trades: list[Trade]
+    ) -> None:
         """Force-close any positions still open at the end of the data."""
-        remaining = list(self.position_manager.get_open_positions().keys())
-
-        for symbol in remaining:
+        for symbol in list(self.position_manager.get_open_positions().keys()):
             exit_price = self._last_known_price[symbol]
             logger.warning(
-                "Symbol=%s has an open position at end of data. "
-                "Force-closing at last known price=%s on date=%s.",
+                "Force-closing symbol=%s at price=%s on date=%s.",
                 symbol,
                 exit_price,
                 last_date,
@@ -282,15 +279,13 @@ class PortfolioSimulator:
         if prices_df.empty:
             raise ValueError("prices_df cannot be empty.")
 
-        required_signal_cols = {"symbol", "date", "signal"}
-        missing = required_signal_cols - set(signals_df.columns)
-        if missing:
-            raise ValueError(f"signals_df missing required columns: {missing}")
+        missing_sig = {"symbol", "date", "signal"} - set(signals_df.columns)
+        if missing_sig:
+            raise ValueError(f"signals_df missing required columns: {missing_sig}")
 
-        required_price_cols = {"symbol", "date", "close"}
-        missing = required_price_cols - set(prices_df.columns)
-        if missing:
-            raise ValueError(f"prices_df missing required columns: {missing}")
+        missing_px = {"symbol", "date", "close"} - set(prices_df.columns)
+        if missing_px:
+            raise ValueError(f"prices_df missing required columns: {missing_px}")
 
     @staticmethod
     def _add_execution_price(prices_df: pd.DataFrame) -> pd.DataFrame:

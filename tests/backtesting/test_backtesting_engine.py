@@ -11,17 +11,19 @@ import pytest
 
 from src.backtesting.backtesting_engine import BacktestingEngine
 
-
 # =============================================================================
 # Helpers
 # =============================================================================
 
+
 def make_signals(symbol: str, dates: list[str], signals: list[int]) -> pd.DataFrame:
-    return pd.DataFrame({
-        "symbol": [symbol] * len(dates),
-        "date": pd.to_datetime(dates),
-        "signal": signals,
-    })
+    return pd.DataFrame(
+        {
+            "symbol": [symbol] * len(dates),
+            "date": pd.to_datetime(dates),
+            "signal": signals,
+        }
+    )
 
 
 def make_prices(
@@ -30,11 +32,13 @@ def make_prices(
     closes: list[float],
     adj_closes: list[float] | None = None,
 ) -> pd.DataFrame:
-    df = pd.DataFrame({
-        "symbol": [symbol] * len(dates),
-        "date": pd.to_datetime(dates),
-        "close": closes,
-    })
+    df = pd.DataFrame(
+        {
+            "symbol": [symbol] * len(dates),
+            "date": pd.to_datetime(dates),
+            "close": closes,
+        }
+    )
     if adj_closes is not None:
         df["adj_close"] = adj_closes
     return df
@@ -47,6 +51,7 @@ DATES_4 = ["2024-01-01", "2024-01-02", "2024-01-03", "2024-01-04"]
 # =============================================================================
 # Input validation
 # =============================================================================
+
 
 def test_run_raises_on_empty_signals_df():
     engine = BacktestingEngine(capital_per_trade=10000, transaction_cost=0, slippage=0)
@@ -99,6 +104,7 @@ def test_run_raises_on_no_overlapping_dates():
 # Core trade lifecycle — single symbol, hand-verifiable
 # =============================================================================
 
+
 def test_simple_buy_sell_produces_one_trade():
     engine = BacktestingEngine(capital_per_trade=10000, transaction_cost=0, slippage=0)
     signals = make_signals("AAPL", DATES_3, [1, 0, -1])
@@ -144,6 +150,7 @@ def test_hold_signal_does_not_trigger_trade(caplog):
 # =============================================================================
 # State machine edge cases
 # =============================================================================
+
 
 def test_duplicate_buy_signal_is_noop():
     engine = BacktestingEngine(capital_per_trade=10000, transaction_cost=0, slippage=0)
@@ -217,8 +224,11 @@ def test_multiple_buy_sell_cycles_same_symbol():
 # Slippage and fees correctness
 # =============================================================================
 
+
 def test_slippage_increases_entry_decreases_exit():
-    engine = BacktestingEngine(capital_per_trade=10000, transaction_cost=0, slippage=0.01)
+    engine = BacktestingEngine(
+        capital_per_trade=10000, transaction_cost=0, slippage=0.01
+    )
     signals = make_signals("AAPL", DATES_3, [1, 0, -1])
     prices = make_prices("AAPL", DATES_3, [100, 105, 110])
 
@@ -233,8 +243,12 @@ def test_transaction_cost_reduces_pnl():
     signals = make_signals("AAPL", DATES_3, [1, 0, -1])
     prices = make_prices("AAPL", DATES_3, [100, 105, 110])
 
-    engine_no_cost = BacktestingEngine(capital_per_trade=10000, transaction_cost=0, slippage=0)
-    engine_with_cost = BacktestingEngine(capital_per_trade=10000, transaction_cost=0.01, slippage=0)
+    engine_no_cost = BacktestingEngine(
+        capital_per_trade=10000, transaction_cost=0, slippage=0
+    )
+    engine_with_cost = BacktestingEngine(
+        capital_per_trade=10000, transaction_cost=0.01, slippage=0
+    )
 
     pnl_no_cost = engine_no_cost.run(signals, prices).trades[0].pnl
     pnl_with_cost = engine_with_cost.run(signals, prices).trades[0].pnl
@@ -255,11 +269,13 @@ def test_zero_or_negative_price_raises_value_error():
 # adj_close fallback rule
 # =============================================================================
 
+
 def test_uses_adj_close_when_available():
     engine = BacktestingEngine(capital_per_trade=10000, transaction_cost=0, slippage=0)
     signals = make_signals("AAPL", DATES_3, [1, 0, -1])
     prices = make_prices(
-        "AAPL", DATES_3,
+        "AAPL",
+        DATES_3,
         closes=[100, 105, 110],
         adj_closes=[90, 95, 99],
     )
@@ -275,7 +291,8 @@ def test_falls_back_to_close_when_adj_close_is_nan():
     engine = BacktestingEngine(capital_per_trade=10000, transaction_cost=0, slippage=0)
     signals = make_signals("AAPL", DATES_3, [1, 0, -1])
     prices = make_prices(
-        "AAPL", DATES_3,
+        "AAPL",
+        DATES_3,
         closes=[100, 105, 110],
         adj_closes=[float("nan"), 95, 99],
     )
@@ -293,18 +310,25 @@ def test_falls_back_to_close_when_adj_close_is_nan():
 # Multi-symbol independence
 # =============================================================================
 
+
 def test_multiple_symbols_produce_independent_trades():
     engine = BacktestingEngine(capital_per_trade=10000, transaction_cost=0, slippage=0)
 
-    signals = pd.concat([
-        make_signals("AAPL", DATES_3, [1, 0, -1]),
-        make_signals("MSFT", DATES_3, [1, 0, -1]),
-    ], ignore_index=True)
+    signals = pd.concat(
+        [
+            make_signals("AAPL", DATES_3, [1, 0, -1]),
+            make_signals("MSFT", DATES_3, [1, 0, -1]),
+        ],
+        ignore_index=True,
+    )
 
-    prices = pd.concat([
-        make_prices("AAPL", DATES_3, [100, 105, 110]),
-        make_prices("MSFT", DATES_3, [200, 210, 220]),
-    ], ignore_index=True)
+    prices = pd.concat(
+        [
+            make_prices("AAPL", DATES_3, [100, 105, 110]),
+            make_prices("MSFT", DATES_3, [200, 210, 220]),
+        ],
+        ignore_index=True,
+    )
 
     result = engine.run(signals, prices)
 
@@ -324,18 +348,25 @@ def test_multiple_symbols_produce_independent_trades():
 # Output integrity
 # =============================================================================
 
+
 def test_trade_id_is_unique_and_sequential():
     engine = BacktestingEngine(capital_per_trade=10000, transaction_cost=0, slippage=0)
 
-    signals = pd.concat([
-        make_signals("AAPL", DATES_4, [1, -1, 1, -1]),
-        make_signals("MSFT", DATES_3, [1, 0, -1]),
-    ], ignore_index=True)
+    signals = pd.concat(
+        [
+            make_signals("AAPL", DATES_4, [1, -1, 1, -1]),
+            make_signals("MSFT", DATES_3, [1, 0, -1]),
+        ],
+        ignore_index=True,
+    )
 
-    prices = pd.concat([
-        make_prices("AAPL", DATES_4, [100, 105, 110, 115]),
-        make_prices("MSFT", DATES_3, [200, 210, 220]),
-    ], ignore_index=True)
+    prices = pd.concat(
+        [
+            make_prices("AAPL", DATES_4, [100, 105, 110, 115]),
+            make_prices("MSFT", DATES_3, [200, 210, 220]),
+        ],
+        ignore_index=True,
+    )
 
     result = engine.run(signals, prices)
 

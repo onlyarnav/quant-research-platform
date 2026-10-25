@@ -9,10 +9,10 @@ import pytest
 
 from src.backtesting.position_manager import OpenPosition, PositionManager
 
-
 # =============================================================================
 # __init__()
 # =============================================================================
+
 
 def test_init_sets_cash_to_initial_capital():
     manager = PositionManager(initial_capital=100_000, max_position_size=0.1)
@@ -28,6 +28,7 @@ def test_init_starts_with_no_open_positions():
 # can_open_position()
 # =============================================================================
 
+
 def test_can_open_position_true_when_cash_sufficient():
     manager = PositionManager(initial_capital=100_000, max_position_size=0.1)
     assert manager.can_open_position("AAPL") is True
@@ -37,6 +38,7 @@ def test_can_open_position_false_when_symbol_already_open():
     manager = PositionManager(initial_capital=100_000, max_position_size=0.1)
     manager.open_position("AAPL", pd.Timestamp("2024-01-01"), 100.0)
     assert manager.can_open_position("AAPL") is False
+
 
 def test_can_open_position_false_when_cash_below_required():
     manager = PositionManager(initial_capital=100_000, max_position_size=0.6)
@@ -60,6 +62,7 @@ def test_can_open_position_does_not_mutate_state():
 # =============================================================================
 # open_position()
 # =============================================================================
+
 
 def test_open_position_returns_open_position_instance():
     manager = PositionManager(initial_capital=100_000, max_position_size=0.1)
@@ -125,6 +128,7 @@ def test_open_position_raises_runtime_error_on_insufficient_cash():
 # close_position()
 # =============================================================================
 
+
 def test_close_position_returns_closed_position():
     manager = PositionManager(initial_capital=100_000, max_position_size=0.1)
     opened = manager.open_position("AAPL", pd.Timestamp("2024-01-01"), 100.0)
@@ -184,6 +188,7 @@ def test_close_position_raises_on_negative_exit_price():
 # get_open_positions()
 # =============================================================================
 
+
 def test_get_open_positions_returns_copy_not_reference():
     manager = PositionManager(initial_capital=100_000, max_position_size=0.1)
     manager.open_position("AAPL", pd.Timestamp("2024-01-01"), 100.0)
@@ -206,6 +211,7 @@ def test_get_open_positions_reflects_multiple_symbols():
 # =============================================================================
 # total_invested_capital()
 # =============================================================================
+
 
 def test_total_invested_capital_zero_when_no_positions():
     manager = PositionManager(initial_capital=100_000, max_position_size=0.1)
@@ -233,6 +239,7 @@ def test_total_invested_capital_decreases_after_close():
 # =============================================================================
 # Cash + position invariant sanity check
 # =============================================================================
+
 
 def test_cash_plus_invested_equals_initial_capital_before_any_pnl():
     """

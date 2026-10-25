@@ -57,7 +57,9 @@ class PositionManager:
             initial_capital if initial_capital is not None else settings.INITIAL_CAPITAL
         )
         self.max_position_size = (
-            max_position_size if max_position_size is not None else settings.MAX_POSITION_SIZE
+            max_position_size
+            if max_position_size is not None
+            else settings.MAX_POSITION_SIZE
         )
 
         self.cash = self.initial_capital
