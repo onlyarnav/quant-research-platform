@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
+
 from src.models.prediction_pipeline import PredictionPipeline
 
 
@@ -18,10 +19,12 @@ def test_run_raises_on_empty_features_df(fitted_dummy_model):
 
 def test_run_raises_on_missing_required_columns(fitted_dummy_model):
     pipeline = PredictionPipeline()
-    features_df = pd.DataFrame({
-        "symbol": ["AAPL"],
-        "f1": [1.0],
-    })  # missing 'date'
+    features_df = pd.DataFrame(
+        {
+            "symbol": ["AAPL"],
+            "f1": [1.0],
+        }
+    )  # missing 'date'
     with pytest.raises(ValueError, match="missing required columns"):
         pipeline.run(
             model=fitted_dummy_model,
@@ -34,11 +37,13 @@ def test_run_raises_on_missing_required_columns(fitted_dummy_model):
 
 def test_run_returns_correct_schema(fitted_dummy_model):
     pipeline = PredictionPipeline()
-    features_df = pd.DataFrame({
-        "symbol": ["AAPL", "AAPL", "AAPL", "MSFT", "MSFT", "MSFT"],
-        "date": pd.date_range("2024-01-01", periods=6),
-        "f1": np.random.randn(6),
-    })
+    features_df = pd.DataFrame(
+        {
+            "symbol": ["AAPL", "AAPL", "AAPL", "MSFT", "MSFT", "MSFT"],
+            "date": pd.date_range("2024-01-01", periods=6),
+            "f1": np.random.randn(6),
+        }
+    )
 
     output_df = pipeline.run(
         model=fitted_dummy_model,
@@ -48,17 +53,25 @@ def test_run_returns_correct_schema(fitted_dummy_model):
         asset_class="equity",
     )
 
-    expected_cols = {"symbol", "date", "predicted_return", "model_name", "model_version"}
+    expected_cols = {
+        "symbol",
+        "date",
+        "predicted_return",
+        "model_name",
+        "model_version",
+    }
     assert set(output_df.columns) == expected_cols
 
 
 def test_run_predicted_return_matches_model_output(fitted_dummy_model):
     pipeline = PredictionPipeline()
-    features_df = pd.DataFrame({
-        "symbol": ["AAPL", "MSFT"],
-        "date": pd.date_range("2024-01-01", periods=2),
-        "f1": [1.0, 2.0],
-    })
+    features_df = pd.DataFrame(
+        {
+            "symbol": ["AAPL", "MSFT"],
+            "date": pd.date_range("2024-01-01", periods=2),
+            "f1": [1.0, 2.0],
+        }
+    )
 
     output_df = pipeline.run(
         model=fitted_dummy_model,
@@ -74,11 +87,13 @@ def test_run_predicted_return_matches_model_output(fitted_dummy_model):
 
 def test_run_model_name_and_version_populated_correctly(fitted_dummy_model):
     pipeline = PredictionPipeline()
-    features_df = pd.DataFrame({
-        "symbol": ["AAPL", "MSFT"],
-        "date": pd.date_range("2024-01-01", periods=2),
-        "f1": [1.0, 2.0],
-    })
+    features_df = pd.DataFrame(
+        {
+            "symbol": ["AAPL", "MSFT"],
+            "date": pd.date_range("2024-01-01", periods=2),
+            "f1": [1.0, 2.0],
+        }
+    )
 
     model_version = "v1.2.3"
     output_df = pipeline.run(
@@ -95,11 +110,13 @@ def test_run_model_name_and_version_populated_correctly(fitted_dummy_model):
 
 def test_run_preserves_row_count(fitted_dummy_model):
     pipeline = PredictionPipeline()
-    features_df = pd.DataFrame({
-        "symbol": ["AAPL", "AAPL", "MSFT", "MSFT"],
-        "date": pd.date_range("2024-01-01", periods=4),
-        "f1": np.random.randn(4),
-    })
+    features_df = pd.DataFrame(
+        {
+            "symbol": ["AAPL", "AAPL", "MSFT", "MSFT"],
+            "date": pd.date_range("2024-01-01", periods=4),
+            "f1": np.random.randn(4),
+        }
+    )
 
     output_df = pipeline.run(
         model=fitted_dummy_model,
@@ -114,11 +131,13 @@ def test_run_preserves_row_count(fitted_dummy_model):
 
 def test_run_does_not_mutate_input_dataframe(fitted_dummy_model):
     pipeline = PredictionPipeline()
-    features_df = pd.DataFrame({
-        "symbol": ["AAPL", "MSFT"],
-        "date": pd.date_range("2024-01-01", periods=2),
-        "f1": [1.0, 2.0],
-    })
+    features_df = pd.DataFrame(
+        {
+            "symbol": ["AAPL", "MSFT"],
+            "date": pd.date_range("2024-01-01", periods=2),
+            "f1": [1.0, 2.0],
+        }
+    )
     original_df = features_df.copy()
 
     pipeline.run(
@@ -137,13 +156,17 @@ def test_run_writes_one_file_per_symbol(monkeypatch, tmp_path, fitted_dummy_mode
 
     # Patch settings and LAYER_PATH_MAP
     monkeypatch.setattr(pw_module.settings, "DATA_PREDICTIONS_PATH", tmp_path)
-    monkeypatch.setitem(pw_module.LAYER_PATH_MAP, pw_module.DataLayer.PREDICTIONS, tmp_path)
+    monkeypatch.setitem(
+        pw_module.LAYER_PATH_MAP, pw_module.DataLayer.PREDICTIONS, tmp_path
+    )
 
-    features_df = pd.DataFrame({
-        "symbol": ["AAPL", "AAPL", "MSFT"],
-        "date": pd.date_range("2024-01-01", periods=3),
-        "f1": [1.0, 2.0, 3.0],
-    })
+    features_df = pd.DataFrame(
+        {
+            "symbol": ["AAPL", "AAPL", "MSFT"],
+            "date": pd.date_range("2024-01-01", periods=3),
+            "f1": [1.0, 2.0, 3.0],
+        }
+    )
 
     pipeline = PredictionPipeline(writer=pw_module.ParquetWriter())
     pipeline.run(
@@ -160,17 +183,23 @@ def test_run_writes_one_file_per_symbol(monkeypatch, tmp_path, fitted_dummy_mode
     assert (tmp_path / "equity" / "equity_MSFT_daily.parquet").exists()
 
 
-def test_run_written_file_content_matches_symbol_subset(monkeypatch, tmp_path, fitted_dummy_model):
+def test_run_written_file_content_matches_symbol_subset(
+    monkeypatch, tmp_path, fitted_dummy_model
+):
     from src.data_storage import parquet_writer as pw_module
 
     monkeypatch.setattr(pw_module.settings, "DATA_PREDICTIONS_PATH", tmp_path)
-    monkeypatch.setitem(pw_module.LAYER_PATH_MAP, pw_module.DataLayer.PREDICTIONS, tmp_path)
+    monkeypatch.setitem(
+        pw_module.LAYER_PATH_MAP, pw_module.DataLayer.PREDICTIONS, tmp_path
+    )
 
-    features_df = pd.DataFrame({
-        "symbol": ["AAPL", "AAPL", "MSFT"],
-        "date": pd.date_range("2024-01-01", periods=3),
-        "f1": [1.0, 2.0, 3.0],
-    })
+    features_df = pd.DataFrame(
+        {
+            "symbol": ["AAPL", "AAPL", "MSFT"],
+            "date": pd.date_range("2024-01-01", periods=3),
+            "f1": [1.0, 2.0, 3.0],
+        }
+    )
 
     pipeline = PredictionPipeline(writer=pw_module.ParquetWriter())
     output_df = pipeline.run(
@@ -181,7 +210,6 @@ def test_run_written_file_content_matches_symbol_subset(monkeypatch, tmp_path, f
         asset_class="equity",
     )
 
-
     # Read back AAPL file
     aapl_df = pd.read_parquet(tmp_path / "equity" / "equity_AAPL_daily.parquet")
 
@@ -190,14 +218,17 @@ def test_run_written_file_content_matches_symbol_subset(monkeypatch, tmp_path, f
 
     pd.testing.assert_frame_equal(aapl_df, expected_aapl, check_dtype=False)
 
+
 def test_run_calls_predict_exactly_once(mocker, fitted_dummy_model):
     """Assert predict() is called once on the full DataFrame, not per symbol."""
     pipeline = PredictionPipeline()
-    features_df = pd.DataFrame({
-        "symbol": ["AAPL", "AAPL", "MSFT"],
-        "date": pd.date_range("2024-01-01", periods=3),
-        "f1": [1.0, 2.0, 3.0],
-    })
+    features_df = pd.DataFrame(
+        {
+            "symbol": ["AAPL", "AAPL", "MSFT"],
+            "date": pd.date_range("2024-01-01", periods=3),
+            "f1": [1.0, 2.0, 3.0],
+        }
+    )
 
     spy_predict = mocker.spy(fitted_dummy_model, "predict")
 

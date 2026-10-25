@@ -4,16 +4,15 @@ Tests for DatasetBuilder.
 
 from __future__ import annotations
 
+import pandas as pd
 import pytest
 
-import pandas as pd
-
 from src.models.dataset_builder import DatasetBuilder, DatasetSplits
-
 
 # =============================================================================
 # load_all_features()
 # =============================================================================
+
 
 def test_load_all_features_concatenates_files(tmp_features_dir):
     """Assert combined row count equals sum of both files."""
@@ -39,6 +38,7 @@ def test_load_all_features_raises_on_empty_dir(tmp_path):
 # select_target_column()
 # =============================================================================
 
+
 @pytest.mark.parametrize(
     "horizon, expected",
     [
@@ -63,6 +63,7 @@ def test_select_target_column_invalid_horizon_raises():
 # =============================================================================
 # build()
 # =============================================================================
+
 
 def test_build_returns_dataset_splits_instance(tmp_features_dir):
     """Confirm the return contract."""

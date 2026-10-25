@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from pathlib import Path
+from typing import Sequence
 
 import joblib
 import numpy as np
@@ -131,6 +132,20 @@ class BaseModel(ABC):
         logger.info("Loading model %s from %s", self.model_name, path)
         self._model = joblib.load(path)
         self._is_fitted = True
+
+    def get_feature_importance(
+        self, feature_names: Sequence[str]
+    ) -> dict[str, float] | None:
+        """
+        Return feature name -> non-negative importance, or None if unsupported.
+
+        Args:
+            feature_names: Sequence of feature names corresponding to the columns.
+
+        Returns:
+            Dictionary mapping feature names to importance scores, or None.
+        """
+        return None
 
     @property
     @abstractmethod

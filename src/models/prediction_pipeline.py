@@ -6,6 +6,7 @@ predicted returns for every symbol, and persists results to the
 predictions data lake layer — one parquet file per symbol, matching
 the platform's file naming convention.
 """
+
 from __future__ import annotations
 
 import pandas as pd
@@ -29,6 +30,8 @@ class PredictionPipeline:
         model_version: str,
         asset_class: str,
         timeframe: str = "daily",
+        *,
+        write_mode: str = "overwrite",
     ) -> pd.DataFrame:
         """
         Generate predictions for all symbols in features_df and persist them.
@@ -36,21 +39,23 @@ class PredictionPipeline:
         Steps:
             1. Validate input.
             2. Predict on features_df[feature_columns].
-            3. Build output schema: symbol, date, predicted_return, model_name, model_version.
-            4. Write one parquet file per symbol to the predictions layer.
-            5. Return the combined predictions DataFrame.
+            3. Build output schema: symbol, date, predicted_return,
+               model_name, model_version.
+            4. Write one parquet file per symbol to predictions layer.
+            5. Return combined predictions DataFrame.
 
         Args:
             model: A fitted BaseModel instance.
-            features_df: Cross-sectional feature DataFrame containing at least
-                'symbol', 'date', and all columns in feature_columns.
+            features_df: Cross-sectional feature DataFrame with
+                'symbol', 'date', and feature_columns.
             feature_columns: Column names to pass into model.predict().
-            model_version: Version identifier for this model (e.g. "v1.0").
-            asset_class: Asset class for file path construction (e.g. "equity").
-            timeframe: Data timeframe for file naming. Defaults to "daily".
+            model_version: Version identifier for model (e.g. "v1.0").
+            asset_class: Asset class for path (e.g. "equity").
+            timeframe: Data timeframe (default "daily").
+            write_mode: ParquetWriter mode ('overwrite' or 'append').
 
         Returns:
-            DataFrame with columns: symbol, date, predicted_return, model_name, model_version.
+            DataFrame with symbol, date, predicted_return, model_name, model_version.
 
         Raises:
             ValueError: If features_df is empty or missing required columns.
@@ -65,13 +70,15 @@ class PredictionPipeline:
 
         predictions = model.predict(features_df[feature_columns])
 
-        output_df = pd.DataFrame({
-            "symbol": features_df["symbol"].values,
-            "date": features_df["date"].values,
-            "predicted_return": predictions,
-            "model_name": model.model_name,
-            "model_version": model_version,
-        })
+        output_df = pd.DataFrame(
+            {
+                "symbol": features_df["symbol"].reset_index(drop=True),
+                "date": features_df["date"].reset_index(drop=True),
+                "predicted_return": predictions,
+                "model_name": model.model_name,
+                "model_version": model_version,
+            }
+        )
 
         for symbol in output_df["symbol"].unique():
             symbol_df = output_df[output_df["symbol"] == symbol].reset_index(drop=True)
@@ -81,7 +88,7 @@ class PredictionPipeline:
                 asset_class=asset_class,
                 symbol=symbol,
                 timeframe=timeframe,
-                mode="overwrite",
+                mode=write_mode,
             )
 
         logger.info("Wrote predictions for %s symbols.", output_df["symbol"].nunique())

@@ -1,15 +1,20 @@
 """
 Wrapper for lightgbm.LGBMRegressor with early stopping support.
 """
+
 from __future__ import annotations
 
+from typing import Sequence
+
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
-import lightgbm as lgb
+
 from src.models.base_model import BaseModel
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
 
 class LightGBMModel(BaseModel):
     """
@@ -72,15 +77,29 @@ class LightGBMModel(BaseModel):
         )
 
         if X_val is not None and y_val is not None:
-            logger.info("Fitting LightGBMModel %s with early stopping.", self.model_name)
-            self._model.fit(
-                X_train,
-                y_train,
-                eval_set=[(X_val, y_val)],
-                callbacks=[lgb.early_stopping(stopping_rounds=20)],
+            logger.info(
+                "Fitting LightGBMModel %s with early stopping.", self.model_name
             )
+            callbacks = [lgb.early_stopping(stopping_rounds=20)]
+            try:
+                self._model.fit(
+                    X_train,
+                    y_train,
+                    eval_X=X_val,
+                    eval_y=y_val,
+                    callbacks=callbacks,
+                )
+            except (TypeError, ValueError):
+                self._model.fit(
+                    X_train,
+                    y_train,
+                    eval_set=[(X_val, y_val)],
+                    callbacks=callbacks,
+                )
         else:
-            logger.info("Fitting LightGBMModel %s without early stopping.", self.model_name)
+            logger.info(
+                "Fitting LightGBMModel %s without early stopping.", self.model_name
+            )
             self._model.fit(X_train, y_train)
 
         self._is_fitted = True
@@ -91,6 +110,29 @@ class LightGBMModel(BaseModel):
         """
         self._check_is_fitted()
         return self._model.predict(X)
+
+    def get_feature_importance(self, feature_names: Sequence[str]) -> dict[str, float]:
+        """
+        Return feature importances as floats.
+
+        Args:
+            feature_names: Sequence of feature names corresponding to training columns.
+
+        Returns:
+            Dictionary mapping feature name to importance score.
+
+        Raises:
+            RuntimeError: If model is not fitted.
+            ValueError: If feature_names length does not match model features.
+        """
+        self._check_is_fitted()
+        importances = self._model.feature_importances_
+        if len(feature_names) != len(importances):
+            raise ValueError(
+                f"feature_names length {len(feature_names)} does not "
+                f"match number of features {len(importances)}."
+            )
+        return {name: float(imp) for name, imp in zip(feature_names, importances)}
 
     @property
     def model_type(self) -> str:
