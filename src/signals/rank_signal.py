@@ -76,16 +76,21 @@ class RankSignalGenerator:
             raise ValueError(f"predictions_df missing required columns: {missing}")
 
         df = predictions_df.copy()
+        date_key = (
+            pd.to_datetime(df["date"], utc=True)
+            if df["date"].dtype == "object"
+            else df["date"]
+        )
 
         # Rank 1 = highest predicted_return, within each date independently.
         # method="first" breaks ties deterministically by row order.
         df["rank"] = (
-            df.groupby("date")["predicted_return"]
+            df.groupby(date_key)["predicted_return"]
             .rank(ascending=False, method="first")
             .astype(int)
         )
 
-        group_sizes = df.groupby("date")["predicted_return"].transform("count")
+        group_sizes = df.groupby(date_key)["predicted_return"].transform("count")
 
         conditions = [
             df["rank"] <= self.top_n,
@@ -103,4 +108,6 @@ class RankSignalGenerator:
             self.bottom_n,
         )
 
-        return df[["symbol", "date", "predicted_return", "signal", "confidence", "rank"]]
+        return df[
+            ["symbol", "date", "predicted_return", "signal", "confidence", "rank"]
+        ]

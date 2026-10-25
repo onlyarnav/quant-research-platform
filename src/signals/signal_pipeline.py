@@ -26,8 +26,7 @@ class SignalGenerator(Protocol):
     this protocol without needing a shared base class.
     """
 
-    def generate(self, predictions_df: pd.DataFrame) -> pd.DataFrame:
-        ...
+    def generate(self, predictions_df: pd.DataFrame) -> pd.DataFrame: ...
 
 
 class SignalPipeline:
@@ -44,12 +43,42 @@ class SignalPipeline:
         """
         self.writer = writer or ParquetWriter()
 
+    def discover_symbols(self, asset_class: str, timeframe: str = "daily") -> list[str]:
+        """Discover available symbols in the predictions data layer.
+
+        Args:
+            asset_class: Asset class for path resolution (e.g. 'equity').
+            timeframe: Data timeframe (e.g. 'daily').
+
+        Returns:
+            Sorted list of unique symbol strings found.
+        """
+        directory = ParquetWriter.build_file_path(
+            DataLayer.PREDICTIONS, asset_class, "_", timeframe
+        ).parent
+        if not directory.exists():
+            return []
+
+        pattern = f"{asset_class}_*_{timeframe}.parquet"
+        symbols: set[str] = set()
+        for file_path in directory.glob(pattern):
+            stem = file_path.stem
+            try:
+                symbol = stem.split("_", 1)[1].rsplit("_", 1)[0]
+                symbols.add(symbol)
+            except IndexError:
+                continue
+
+        return sorted(symbols)
+
     def run(
         self,
         generator: SignalGenerator,
         symbols: list[str],
         asset_class: str,
         timeframe: str = "daily",
+        *,
+        write_mode: str = "overwrite",
     ) -> pd.DataFrame:
         """
         Read predictions for the given symbols, generate signals,
@@ -61,6 +90,7 @@ class SignalPipeline:
             symbols: List of symbols to process.
             asset_class: Asset class for file path construction (e.g. "equity").
             timeframe: Data timeframe for file naming. Defaults to "daily".
+            write_mode: ParquetWriter mode ('overwrite' or 'append').
 
         Returns:
             Combined DataFrame of all generated signals across symbols.
@@ -96,18 +126,21 @@ class SignalPipeline:
             )
 
         predictions_df = pd.concat(predictions_frames, ignore_index=True)
+        predictions_df["date"] = pd.to_datetime(predictions_df["date"], utc=True)
 
         signals_df = generator.generate(predictions_df)
 
         for symbol in signals_df["symbol"].unique():
-            symbol_df = signals_df[signals_df["symbol"] == symbol].reset_index(drop=True)
+            symbol_df = signals_df[signals_df["symbol"] == symbol].reset_index(
+                drop=True
+            )
             self.writer.write(
                 symbol_df,
                 layer=DataLayer.SIGNALS,
                 asset_class=asset_class,
                 symbol=symbol,
                 timeframe=timeframe,
-                mode="overwrite",
+                mode=write_mode,
             )
 
         logger.info(

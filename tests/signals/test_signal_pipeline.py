@@ -27,21 +27,27 @@ def patched_writer(monkeypatch, tmp_path):
 
     monkeypatch.setattr(pw_module.settings, "DATA_PREDICTIONS_PATH", predictions_path)
     monkeypatch.setattr(pw_module.settings, "DATA_SIGNALS_PATH", signals_path)
-    monkeypatch.setitem(pw_module.LAYER_PATH_MAP, pw_module.DataLayer.PREDICTIONS, predictions_path)
-    monkeypatch.setitem(pw_module.LAYER_PATH_MAP, pw_module.DataLayer.SIGNALS, signals_path)
+    monkeypatch.setitem(
+        pw_module.LAYER_PATH_MAP, pw_module.DataLayer.PREDICTIONS, predictions_path
+    )
+    monkeypatch.setitem(
+        pw_module.LAYER_PATH_MAP, pw_module.DataLayer.SIGNALS, signals_path
+    )
 
     return pw_module.ParquetWriter(), predictions_path, signals_path
 
 
 def _seed_predictions(writer: ParquetWriter, symbol: str, asset_class: str) -> None:
     """Helper to write a synthetic prediction file for a symbol."""
-    df = pd.DataFrame({
-        "symbol": [symbol, symbol],
-        "date": pd.to_datetime(["2024-01-01", "2024-01-02"]),
-        "predicted_return": [0.02, -0.02],
-        "model_name": ["dummy_model", "dummy_model"],
-        "model_version": ["v1.0", "v1.0"],
-    })
+    df = pd.DataFrame(
+        {
+            "symbol": [symbol, symbol],
+            "date": pd.to_datetime(["2024-01-01", "2024-01-02"]),
+            "predicted_return": [0.02, -0.02],
+            "model_name": ["dummy_model", "dummy_model"],
+            "model_version": ["v1.0", "v1.0"],
+        }
+    )
     writer.write(
         df,
         layer=DataLayer.PREDICTIONS,
@@ -55,6 +61,7 @@ def _seed_predictions(writer: ParquetWriter, symbol: str, asset_class: str) -> N
 # =============================================================================
 # Input validation
 # =============================================================================
+
 
 def test_run_raises_on_empty_symbols_list(patched_writer):
     writer, _, _ = patched_writer
@@ -78,6 +85,7 @@ def test_run_raises_when_no_prediction_files_found(patched_writer):
 # Core behavior
 # =============================================================================
 
+
 def test_run_reads_and_combines_multiple_symbols(patched_writer):
     writer, _, _ = patched_writer
     _seed_predictions(writer, "AAPL", "equity")
@@ -86,7 +94,9 @@ def test_run_reads_and_combines_multiple_symbols(patched_writer):
     pipeline = SignalPipeline(writer=writer)
     generator = ThresholdSignalGenerator(threshold=0.01)
 
-    signals_df = pipeline.run(generator=generator, symbols=["AAPL", "MSFT"], asset_class="equity")
+    signals_df = pipeline.run(
+        generator=generator, symbols=["AAPL", "MSFT"], asset_class="equity"
+    )
 
     assert set(signals_df["symbol"].unique()) == {"AAPL", "MSFT"}
     assert len(signals_df) == 4  # 2 rows per symbol
@@ -106,7 +116,10 @@ def test_run_skips_missing_symbol_with_warning(patched_writer, caplog):
     )
 
     assert set(signals_df["symbol"].unique()) == {"AAPL"}
-    assert any("No prediction file found for symbol=MISSING" in rec.message for rec in caplog.records)
+    assert any(
+        "No prediction file found for symbol=MISSING" in rec.message
+        for rec in caplog.records
+    )
 
 
 def test_run_applies_generator_correctly(patched_writer):
@@ -116,7 +129,9 @@ def test_run_applies_generator_correctly(patched_writer):
     pipeline = SignalPipeline(writer=writer)
     generator = ThresholdSignalGenerator(threshold=0.01)
 
-    signals_df = pipeline.run(generator=generator, symbols=["AAPL"], asset_class="equity")
+    signals_df = pipeline.run(
+        generator=generator, symbols=["AAPL"], asset_class="equity"
+    )
 
     # predicted_return=[0.02, -0.02] with threshold=0.01 -> [BUY, SELL]
     assert list(signals_df["signal"]) == [1, -1]
@@ -143,7 +158,9 @@ def test_run_written_signal_file_content_matches_output(patched_writer):
     pipeline = SignalPipeline(writer=writer)
     generator = ThresholdSignalGenerator(threshold=0.01)
 
-    signals_df = pipeline.run(generator=generator, symbols=["AAPL"], asset_class="equity")
+    signals_df = pipeline.run(
+        generator=generator, symbols=["AAPL"], asset_class="equity"
+    )
 
     written_df = pd.read_parquet(signals_path / "equity" / "equity_AAPL_daily.parquet")
 
@@ -161,7 +178,16 @@ def test_run_returns_correct_schema(patched_writer):
     pipeline = SignalPipeline(writer=writer)
     generator = ThresholdSignalGenerator(threshold=0.01)
 
-    signals_df = pipeline.run(generator=generator, symbols=["AAPL"], asset_class="equity")
+    signals_df = pipeline.run(
+        generator=generator, symbols=["AAPL"], asset_class="equity"
+    )
 
-    expected_cols = {"symbol", "date", "predicted_return", "signal", "confidence", "rank"}
+    expected_cols = {
+        "symbol",
+        "date",
+        "predicted_return",
+        "signal",
+        "confidence",
+        "rank",
+    }
     assert set(signals_df.columns) == expected_cols
