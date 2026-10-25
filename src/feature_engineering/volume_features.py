@@ -83,9 +83,7 @@ class VolumeFeatureGenerator:
 
         result = df.copy()
 
-        result = result.sort_values(
-            ["symbol", "date"]
-        ).reset_index(drop=True)
+        result = result.sort_values(["symbol", "date"]).reset_index(drop=True)
 
         result = self._generate_volume_ma(result)
         result = self._generate_volume_ratio(result)
@@ -115,14 +113,11 @@ class VolumeFeatureGenerator:
             volume_ma_20 = SMA(20) of volume
         """
 
-        df["volume_ma_20"] = (
-            df.groupby("symbol")["volume"]
-            .transform(
-                lambda x, w=self.VOLUME_WINDOW: x.rolling(
-                    window=w,
-                    min_periods=w,
-                ).mean()
-            )
+        df["volume_ma_20"] = df.groupby("symbol")["volume"].transform(
+            lambda x, w=self.VOLUME_WINDOW: x.rolling(
+                window=w,
+                min_periods=w,
+            ).mean()
         )
 
         return df
@@ -143,9 +138,7 @@ class VolumeFeatureGenerator:
             np.nan,
         )
 
-        df["volume_ratio"] = (
-            df["volume"] / volume_ma
-        )
+        df["volume_ratio"] = df["volume"] / volume_ma
 
         return df
 
@@ -185,13 +178,10 @@ class VolumeFeatureGenerator:
                 index=group.index,
             ).cumsum()
 
-        df["obv"] = (
-            df.groupby(
-                "symbol",
-                group_keys=False,
-            )
-            .apply(calculate_obv)
-        )
+        obv_series = pd.Series(index=df.index, dtype=float)
+        for _, group in df.groupby("symbol"):
+            obv_series.loc[group.index] = calculate_obv(group)
+        df["obv"] = obv_series
 
         return df
 
@@ -204,37 +194,23 @@ class VolumeFeatureGenerator:
         """
 
         if df.empty:
-            raise ValueError(
-                "Input DataFrame is empty."
-            )
+            raise ValueError("Input DataFrame is empty.")
 
         missing_columns = [
-            column
-            for column in self.REQUIRED_COLUMNS
-            if column not in df.columns
+            column for column in self.REQUIRED_COLUMNS if column not in df.columns
         ]
 
         if missing_columns:
-            raise ValueError(
-                f"Missing required columns: {missing_columns}"
-            )
+            raise ValueError(f"Missing required columns: {missing_columns}")
 
         if df["symbol"].isna().any():
-            raise ValueError(
-                "Column 'symbol' contains null values."
-            )
+            raise ValueError("Column 'symbol' contains null values.")
 
         if df["date"].isna().any():
-            raise ValueError(
-                "Column 'date' contains null values."
-            )
+            raise ValueError("Column 'date' contains null values.")
 
         if df["close"].isna().any():
-            raise ValueError(
-                "Column 'close' contains null values."
-            )
+            raise ValueError("Column 'close' contains null values.")
 
         if df["volume"].isna().any():
-            raise ValueError(
-                "Column 'volume' contains null values."
-            )
+            raise ValueError("Column 'volume' contains null values.")

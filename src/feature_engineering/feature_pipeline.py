@@ -24,8 +24,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.data_storage.parquet_writer import DataLayer, ParquetWriter
-from src.feature_engineering.mean_reversion_features import MeanReversionFeatureGenerator
+from src.data_storage.parquet_writer import LAYER_PATH_MAP, DataLayer, ParquetWriter
+from src.feature_engineering.mean_reversion_features import (
+    MeanReversionFeatureGenerator,
+)
 from src.feature_engineering.momentum_features import MomentumFeatureGenerator
 from src.feature_engineering.target_generator import TargetGenerator
 from src.feature_engineering.trend_features import TrendFeatureGenerator
@@ -82,9 +84,7 @@ class FeaturePipeline:
         Returns:
             FeaturePipelineReport summarizing success and failure counts.
         """
-        processed_root = self.writer.build_file_path(
-            DataLayer.PROCESSED, "", "", ""
-        ).parent.parent
+        processed_root = LAYER_PATH_MAP[DataLayer.PROCESSED]
 
         parquet_files = sorted(processed_root.rglob("*.parquet"))
 
@@ -186,16 +186,13 @@ class FeaturePipeline:
         target_df = self.target_generator.generate(df)
 
         merged_df = (
-            trend_df
-            .merge(momentum_df, on=["symbol", "date"], how="inner")
+            trend_df.merge(momentum_df, on=["symbol", "date"], how="inner")
             .merge(volatility_df, on=["symbol", "date"], how="inner")
             .merge(mean_reversion_df, on=["symbol", "date"], how="inner")
             .merge(volume_df, on=["symbol", "date"], how="inner")
             .merge(target_df, on=["symbol", "date"], how="inner")
         )
 
-        merged_df = merged_df.sort_values(
-            ["symbol", "date"]
-        ).reset_index(drop=True)
+        merged_df = merged_df.sort_values(["symbol", "date"]).reset_index(drop=True)
 
         return merged_df

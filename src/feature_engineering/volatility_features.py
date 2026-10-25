@@ -94,9 +94,7 @@ class VolatilityFeatureGenerator:
 
         result = df.copy()
 
-        result = result.sort_values(
-            ["symbol", "date"]
-        ).reset_index(drop=True)
+        result = result.sort_values(["symbol", "date"]).reset_index(drop=True)
 
         price_column = self._get_price_column(result)
 
@@ -142,26 +140,17 @@ class VolatilityFeatureGenerator:
             volatility = rolling_std(log_returns) * sqrt(252)
         """
 
-        log_returns = (
-            df.groupby("symbol")[price_column]
-            .transform(
-                lambda x: np.log(
-                    x / x.shift(1)
-                )
-            )
+        log_returns = df.groupby("symbol")[price_column].transform(
+            lambda x: np.log(x / x.shift(1))
         )
 
         for window in (10, 20, 50):
-            df[f"volatility_{window}"] = (
-                log_returns.groupby(df["symbol"])
-                .transform(
-                    lambda x, w=window: x.rolling(
-                        window=w,
-                        min_periods=w,
-                    ).std()
-                )
-                * np.sqrt(self.TRADING_DAYS_PER_YEAR)
-            )
+            df[f"volatility_{window}"] = log_returns.groupby(df["symbol"]).transform(
+                lambda x, w=window: x.rolling(
+                    window=w,
+                    min_periods=w,
+                ).std()
+            ) * np.sqrt(self.TRADING_DAYS_PER_YEAR)
 
         return df
 
@@ -190,13 +179,9 @@ class VolatilityFeatureGenerator:
 
             tr_1 = group["high"] - group["low"]
 
-            tr_2 = (
-                group["high"] - previous_close
-            ).abs()
+            tr_2 = (group["high"] - previous_close).abs()
 
-            tr_3 = (
-                group["low"] - previous_close
-            ).abs()
+            tr_3 = (group["low"] - previous_close).abs()
 
             true_range = pd.concat(
                 [tr_1, tr_2, tr_3],
@@ -211,14 +196,10 @@ class VolatilityFeatureGenerator:
 
             return atr
 
-        df["atr_14"] = (
-            df.groupby(
-                "symbol",
-                group_keys=False,
-            )
-            .apply(calculate_atr)
-            .reset_index(drop=True)
-        )
+        atr_series = pd.Series(index=df.index, dtype=float)
+        for _, group in df.groupby("symbol"):
+            atr_series.loc[group.index] = calculate_atr(group)
+        df["atr_14"] = atr_series
 
         return df
 
@@ -252,25 +233,16 @@ class VolatilityFeatureGenerator:
                 min_periods=20,
             ).std()
 
-            upper_band = (
-                middle_band
-                + (2 * rolling_std)
-            )
+            upper_band = middle_band + (2 * rolling_std)
 
-            lower_band = (
-                middle_band
-                - (2 * rolling_std)
-            )
+            lower_band = middle_band - (2 * rolling_std)
 
-            width = (
-                upper_band - lower_band
-            ) / middle_band
+            width = (upper_band - lower_band) / middle_band
 
             return width
 
-        df["bollinger_width"] = (
-            df.groupby("symbol")[price_column]
-            .transform(calculate_width)
+        df["bollinger_width"] = df.groupby("symbol")[price_column].transform(
+            calculate_width
         )
 
         return df
@@ -287,10 +259,7 @@ class VolatilityFeatureGenerator:
             2. close
         """
 
-        if (
-            "adj_close" in df.columns
-            and not df["adj_close"].isna().all()
-        ):
+        if "adj_close" in df.columns and not df["adj_close"].isna().all():
             return "adj_close"
 
         return "close"
@@ -304,23 +273,15 @@ class VolatilityFeatureGenerator:
         """
 
         if df.empty:
-            raise ValueError(
-                "Input DataFrame is empty."
-            )
+            raise ValueError("Input DataFrame is empty.")
 
         missing_columns = [
-            column
-            for column in self.REQUIRED_COLUMNS
-            if column not in df.columns
+            column for column in self.REQUIRED_COLUMNS if column not in df.columns
         ]
 
         if missing_columns:
-            raise ValueError(
-                f"Missing required columns: {missing_columns}"
-            )
+            raise ValueError(f"Missing required columns: {missing_columns}")
 
         for column in self.REQUIRED_COLUMNS:
             if df[column].isna().any():
-                raise ValueError(
-                    f"Column '{column}' contains null values."
-                )
+                raise ValueError(f"Column '{column}' contains null values.")

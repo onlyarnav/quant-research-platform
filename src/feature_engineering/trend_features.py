@@ -105,9 +105,7 @@ class TrendFeatureGenerator:
 
         result = df.copy()
 
-        result = result.sort_values(
-            ["symbol", "date"]
-        ).reset_index(drop=True)
+        result = result.sort_values(["symbol", "date"]).reset_index(drop=True)
 
         price_column = self._get_price_column(result)
 
@@ -151,14 +149,11 @@ class TrendFeatureGenerator:
         for window in self.SMA_WINDOWS:
             feature_name = f"sma_{window}"
 
-            df[feature_name] = (
-                df.groupby("symbol")[price_column]
-                .transform(
-                    lambda x, w=window: x.rolling(
-                        window=w,
-                        min_periods=w,
-                    ).mean()
-                )
+            df[feature_name] = df.groupby("symbol")[price_column].transform(
+                lambda x, w=window: x.rolling(
+                    window=w,
+                    min_periods=w,
+                ).mean()
             )
 
         return df
@@ -175,14 +170,11 @@ class TrendFeatureGenerator:
         for window in self.EMA_WINDOWS:
             feature_name = f"ema_{window}"
 
-            df[feature_name] = (
-                df.groupby("symbol")[price_column]
-                .transform(
-                    lambda x, w=window: x.ewm(
-                        span=w,
-                        adjust=False,
-                    ).mean()
-                )
+            df[feature_name] = df.groupby("symbol")[price_column].transform(
+                lambda x, w=window: x.ewm(
+                    span=w,
+                    adjust=False,
+                ).mean()
             )
 
         return df
@@ -199,10 +191,7 @@ class TrendFeatureGenerator:
             2. close
         """
 
-        if (
-            "adj_close" in df.columns
-            and not df["adj_close"].isna().all()
-        ):
+        if "adj_close" in df.columns and not df["adj_close"].isna().all():
             return "adj_close"
 
         return "close"
@@ -216,32 +205,20 @@ class TrendFeatureGenerator:
         """
 
         if df.empty:
-            raise ValueError(
-                "Input DataFrame is empty."
-            )
+            raise ValueError("Input DataFrame is empty.")
 
         missing_columns = [
-            column
-            for column in self.REQUIRED_COLUMNS
-            if column not in df.columns
+            column for column in self.REQUIRED_COLUMNS if column not in df.columns
         ]
 
         if missing_columns:
-            raise ValueError(
-                f"Missing required columns: {missing_columns}"
-            )
+            raise ValueError(f"Missing required columns: {missing_columns}")
 
         if df["symbol"].isna().any():
-            raise ValueError(
-                "Column 'symbol' contains null values."
-            )
+            raise ValueError("Column 'symbol' contains null values.")
 
         if df["date"].isna().any():
-            raise ValueError(
-                "Column 'date' contains null values."
-            )
+            raise ValueError("Column 'date' contains null values.")
 
         if df["close"].isna().any():
-            raise ValueError(
-                "Column 'close' contains null values."
-            )
+            raise ValueError("Column 'close' contains null values.")

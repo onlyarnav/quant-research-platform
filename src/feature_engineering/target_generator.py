@@ -102,9 +102,7 @@ class TargetGenerator:
 
         result = df.copy()
 
-        result = result.sort_values(
-            ["symbol", "date"]
-        ).reset_index(drop=True)
+        result = result.sort_values(["symbol", "date"]).reset_index(drop=True)
 
         price_column = self._get_price_column(result)
 
@@ -150,16 +148,11 @@ class TargetGenerator:
         for horizon in self.TARGET_HORIZONS:
             column_name = f"future_return_{horizon}d"
 
-            future_price = (
-                df.groupby("symbol")[price_column]
-                .transform(
-                    lambda x, h=horizon: x.shift(-h)
-                )
+            future_price = df.groupby("symbol")[price_column].transform(
+                lambda x, h=horizon: x.shift(-h)
             )
 
-            df[column_name] = (
-                future_price / df[price_column]
-            ) - 1.0
+            df[column_name] = (future_price / df[price_column]) - 1.0
 
         return df
 
@@ -175,10 +168,7 @@ class TargetGenerator:
             2. close
         """
 
-        if (
-            "adj_close" in df.columns
-            and not df["adj_close"].isna().all()
-        ):
+        if "adj_close" in df.columns and not df["adj_close"].isna().all():
             return "adj_close"
 
         return "close"
@@ -192,32 +182,20 @@ class TargetGenerator:
         """
 
         if df.empty:
-            raise ValueError(
-                "Input DataFrame is empty."
-            )
+            raise ValueError("Input DataFrame is empty.")
 
         missing_columns = [
-            column
-            for column in self.REQUIRED_COLUMNS
-            if column not in df.columns
+            column for column in self.REQUIRED_COLUMNS if column not in df.columns
         ]
 
         if missing_columns:
-            raise ValueError(
-                f"Missing required columns: {missing_columns}"
-            )
+            raise ValueError(f"Missing required columns: {missing_columns}")
 
         if df["symbol"].isna().any():
-            raise ValueError(
-                "Column 'symbol' contains null values."
-            )
+            raise ValueError("Column 'symbol' contains null values.")
 
         if df["date"].isna().any():
-            raise ValueError(
-                "Column 'date' contains null values."
-            )
+            raise ValueError("Column 'date' contains null values.")
 
         if df["close"].isna().any():
-            raise ValueError(
-                "Column 'close' contains null values."
-            )
+            raise ValueError("Column 'close' contains null values.")
