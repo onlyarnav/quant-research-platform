@@ -87,9 +87,7 @@ class SignalRepository:
             )
         )
 
-        return list(
-            self._session.scalars(stmt)
-        )
+        return list(self._session.scalars(stmt))
 
     def get_by_date_range(
         self,
@@ -116,9 +114,7 @@ class SignalRepository:
             )
         )
 
-        return list(
-            self._session.scalars(stmt)
-        )
+        return list(self._session.scalars(stmt))
 
     def get_by_model_version(
         self,
@@ -141,9 +137,7 @@ class SignalRepository:
             )
         )
 
-        return list(
-            self._session.scalars(stmt)
-        )
+        return list(self._session.scalars(stmt))
 
     def bulk_insert(
         self,
@@ -158,14 +152,11 @@ class SignalRepository:
         if not records:
             return 0
 
-        stmt = (
-            insert(Signal)
-            .on_conflict_do_nothing(
-                index_elements=[
-                    "symbol",
-                    "date",
-                ]
-            )
+        stmt = insert(Signal).on_conflict_do_nothing(
+            index_elements=[
+                "symbol",
+                "date",
+            ]
         )
 
         self._session.execute(

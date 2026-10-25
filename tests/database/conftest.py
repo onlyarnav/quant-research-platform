@@ -8,12 +8,10 @@ transaction-isolated sessions for every test.
 from __future__ import annotations
 
 import pytest
-
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from config.settings import settings
-
 from src.database.repository import (
     AssetRepository,
     FeatureRepository,

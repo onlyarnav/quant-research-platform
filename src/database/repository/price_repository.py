@@ -15,6 +15,7 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+
 class PriceRepository:
     """Data access layer for Price entities."""
 
@@ -91,15 +92,9 @@ class PriceRepository:
             Price.symbol == symbol,
         )
 
-        stmt = stmt.order_by(
-            Price.date.asc()
-            if order_asc
-            else Price.date.desc()
-        )
+        stmt = stmt.order_by(Price.date.asc() if order_asc else Price.date.desc())
 
-        return list(
-            self._session.scalars(stmt)
-        )
+        return list(self._session.scalars(stmt))
 
     def get_by_date_range(
         self,
@@ -120,14 +115,10 @@ class PriceRepository:
                 Price.date >= start_date,
                 Price.date <= end_date,
             )
-            .order_by(
-                Price.date.asc()
-            )
+            .order_by(Price.date.asc())
         )
 
-        return list(
-            self._session.scalars(stmt)
-        )
+        return list(self._session.scalars(stmt))
 
     def bulk_insert(
         self,
@@ -142,14 +133,11 @@ class PriceRepository:
         if not records:
             return 0
 
-        stmt = (
-            insert(Price)
-            .on_conflict_do_nothing(
-                index_elements=[
-                    "symbol",
-                    "date",
-                ]
-            )
+        stmt = insert(Price).on_conflict_do_nothing(
+            index_elements=[
+                "symbol",
+                "date",
+            ]
         )
 
         self._session.execute(

@@ -33,6 +33,7 @@ def make_trade(**overrides) -> dict:
 # insert()
 # ============================================================
 
+
 def test_insert_creates_new_trade(trade_repo):
     trade = trade_repo.insert(make_trade())
 
@@ -61,6 +62,7 @@ def test_insert_allows_duplicate_symbol_and_date(trade_repo):
 # ============================================================
 # get_by_symbol()
 # ============================================================
+
 
 def test_get_by_symbol_returns_inserted_trade(trade_repo):
     trade_repo.insert(make_trade())
@@ -107,6 +109,7 @@ def test_get_by_symbol_ordered_by_entry_date_asc(trade_repo):
 # ============================================================
 # get_by_date_range()
 # ============================================================
+
 
 def test_get_by_date_range_returns_correct_records(trade_repo):
     trade_repo.insert(
@@ -191,6 +194,7 @@ def test_get_by_date_range_returns_empty(trade_repo):
 # bulk_insert()
 # ============================================================
 
+
 def test_bulk_insert_returns_count(trade_repo):
     records = [
         make_trade(symbol="A.NS"),
@@ -212,6 +216,7 @@ def test_bulk_insert_empty_returns_zero(trade_repo):
 # ============================================================
 # delete_by_symbol()
 # ============================================================
+
 
 def test_delete_by_symbol_removes_records(trade_repo):
     trade_repo.insert(make_trade())

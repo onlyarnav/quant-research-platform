@@ -26,6 +26,7 @@ def make_feature(**overrides) -> dict:
 # upsert()
 # ============================================================
 
+
 def test_upsert_inserts_new_feature(feature_repo):
     feature = feature_repo.upsert(make_feature())
 
@@ -41,13 +42,9 @@ def test_upsert_returns_feature_with_id(feature_repo):
 
 
 def test_upsert_updates_on_conflict(feature_repo):
-    feature_repo.upsert(
-        make_feature(feature_set_version="v1.0")
-    )
+    feature_repo.upsert(make_feature(feature_set_version="v1.0"))
 
-    updated = feature_repo.upsert(
-        make_feature(feature_set_version="v2.0")
-    )
+    updated = feature_repo.upsert(make_feature(feature_set_version="v2.0"))
 
     assert updated.feature_set_version == "v2.0"
 
@@ -55,6 +52,7 @@ def test_upsert_updates_on_conflict(feature_repo):
 # ============================================================
 # get_by_symbol()
 # ============================================================
+
 
 def test_get_by_symbol_returns_inserted_feature(feature_repo):
     feature_repo.upsert(make_feature())
@@ -93,9 +91,7 @@ def test_get_by_symbol_ordered_by_date_asc(feature_repo):
         )
     )
 
-    features = feature_repo.get_by_symbol(
-        "RELIANCE.NS"
-    )
+    features = feature_repo.get_by_symbol("RELIANCE.NS")
 
     assert features[0].date < features[1].date
 
@@ -103,6 +99,7 @@ def test_get_by_symbol_ordered_by_date_asc(feature_repo):
 # ============================================================
 # get_by_date_range()
 # ============================================================
+
 
 def test_get_by_date_range_returns_correct_records(feature_repo):
     feature_repo.upsert(
@@ -187,6 +184,7 @@ def test_get_by_date_range_returns_empty(feature_repo):
 # get_by_feature_set_version()
 # ============================================================
 
+
 def test_get_by_feature_set_version_returns_matching(
     feature_repo,
 ):
@@ -211,9 +209,7 @@ def test_get_by_feature_set_version_returns_matching(
         )
     )
 
-    features = feature_repo.get_by_feature_set_version(
-        "v1.0"
-    )
+    features = feature_repo.get_by_feature_set_version("v1.0")
 
     assert len(features) == 2
 
@@ -221,9 +217,7 @@ def test_get_by_feature_set_version_returns_matching(
 def test_get_by_feature_set_version_returns_empty(
     feature_repo,
 ):
-    features = feature_repo.get_by_feature_set_version(
-        "v999"
-    )
+    features = feature_repo.get_by_feature_set_version("v999")
 
     assert features == []
 
@@ -257,9 +251,7 @@ def test_get_by_feature_set_version_ordered_by_symbol_then_date(
         )
     )
 
-    features = feature_repo.get_by_feature_set_version(
-        "v1.0"
-    )
+    features = feature_repo.get_by_feature_set_version("v1.0")
 
     assert (
         features[0].symbol,
@@ -273,6 +265,7 @@ def test_get_by_feature_set_version_ordered_by_symbol_then_date(
 # ============================================================
 # bulk_insert()
 # ============================================================
+
 
 def test_bulk_insert_returns_count(feature_repo):
     records = [
@@ -295,9 +288,7 @@ def test_bulk_insert_empty_returns_zero(feature_repo):
 def test_bulk_insert_ignores_duplicates(feature_repo):
     feature_repo.upsert(make_feature())
 
-    count = feature_repo.bulk_insert(
-        [make_feature()]
-    )
+    count = feature_repo.bulk_insert([make_feature()])
 
     assert count == 1
 
@@ -306,16 +297,13 @@ def test_bulk_insert_ignores_duplicates(feature_repo):
 # delete_by_symbol()
 # ============================================================
 
+
 def test_delete_by_symbol_removes_records(feature_repo):
     feature_repo.upsert(make_feature())
 
-    feature_repo.delete_by_symbol(
-        "RELIANCE.NS"
-    )
+    feature_repo.delete_by_symbol("RELIANCE.NS")
 
-    features = feature_repo.get_by_symbol(
-        "RELIANCE.NS"
-    )
+    features = feature_repo.get_by_symbol("RELIANCE.NS")
 
     assert features == []
 
@@ -323,9 +311,7 @@ def test_delete_by_symbol_removes_records(feature_repo):
 def test_delete_by_symbol_returns_count(feature_repo):
     feature_repo.upsert(make_feature())
 
-    deleted = feature_repo.delete_by_symbol(
-        "RELIANCE.NS"
-    )
+    deleted = feature_repo.delete_by_symbol("RELIANCE.NS")
 
     assert deleted == 1
 
@@ -333,8 +319,6 @@ def test_delete_by_symbol_returns_count(feature_repo):
 def test_delete_by_symbol_returns_zero_for_unknown(
     feature_repo,
 ):
-    deleted = feature_repo.delete_by_symbol(
-        "UNKNOWN"
-    )
+    deleted = feature_repo.delete_by_symbol("UNKNOWN")
 
     assert deleted == 0

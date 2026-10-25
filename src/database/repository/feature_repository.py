@@ -36,9 +36,7 @@ class FeatureRepository:
             .on_conflict_do_update(
                 index_elements=["symbol", "date"],
                 set_={
-                    "feature_set_version": data[
-                        "feature_set_version"
-                    ],
+                    "feature_set_version": data["feature_set_version"],
                 },
             )
         )
@@ -87,9 +85,7 @@ class FeatureRepository:
             )
         )
 
-        return list(
-            self._session.scalars(stmt)
-        )
+        return list(self._session.scalars(stmt))
 
     def get_by_date_range(
         self,
@@ -116,9 +112,7 @@ class FeatureRepository:
             )
         )
 
-        return list(
-            self._session.scalars(stmt)
-        )
+        return list(self._session.scalars(stmt))
 
     def get_by_feature_set_version(
         self,
@@ -141,9 +135,7 @@ class FeatureRepository:
             )
         )
 
-        return list(
-            self._session.scalars(stmt)
-        )
+        return list(self._session.scalars(stmt))
 
     def bulk_insert(
         self,
@@ -158,14 +150,11 @@ class FeatureRepository:
         if not records:
             return 0
 
-        stmt = (
-            insert(Feature)
-            .on_conflict_do_nothing(
-                index_elements=[
-                    "symbol",
-                    "date",
-                ]
-            )
+        stmt = insert(Feature).on_conflict_do_nothing(
+            index_elements=[
+                "symbol",
+                "date",
+            ]
         )
 
         self._session.execute(

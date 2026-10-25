@@ -64,9 +64,7 @@ class TradeRepository:
             )
         )
 
-        return list(
-            self._session.scalars(stmt)
-        )
+        return list(self._session.scalars(stmt))
 
     def get_by_date_range(
         self,
@@ -92,9 +90,7 @@ class TradeRepository:
             )
         )
 
-        return list(
-            self._session.scalars(stmt)
-        )
+        return list(self._session.scalars(stmt))
 
     def bulk_insert(
         self,

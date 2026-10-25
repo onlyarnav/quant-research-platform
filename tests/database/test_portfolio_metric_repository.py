@@ -26,6 +26,7 @@ def make_metric(**overrides) -> dict:
 # insert()
 # ============================================================
 
+
 def test_insert_creates_new_metric(portfolio_repo):
     metric = portfolio_repo.insert(make_metric())
 
@@ -48,9 +49,7 @@ def test_insert_allows_duplicate_strategy_and_metric(
 
     portfolio_repo.insert(make_metric())
 
-    metrics = portfolio_repo.get_by_strategy(
-        "momentum_v1"
-    )
+    metrics = portfolio_repo.get_by_strategy("momentum_v1")
 
     assert len(metrics) == 2
 
@@ -59,14 +58,13 @@ def test_insert_allows_duplicate_strategy_and_metric(
 # get_by_strategy()
 # ============================================================
 
+
 def test_get_by_strategy_returns_inserted_metric(
     portfolio_repo,
 ):
     portfolio_repo.insert(make_metric())
 
-    metrics = portfolio_repo.get_by_strategy(
-        "momentum_v1"
-    )
+    metrics = portfolio_repo.get_by_strategy("momentum_v1")
 
     assert len(metrics) == 1
 
@@ -74,9 +72,7 @@ def test_get_by_strategy_returns_inserted_metric(
 def test_get_by_strategy_returns_empty_for_unknown(
     portfolio_repo,
 ):
-    metrics = portfolio_repo.get_by_strategy(
-        "unknown_strategy"
-    )
+    metrics = portfolio_repo.get_by_strategy("unknown_strategy")
 
     assert metrics == []
 
@@ -84,21 +80,13 @@ def test_get_by_strategy_returns_empty_for_unknown(
 def test_get_by_strategy_returns_multiple_metrics(
     portfolio_repo,
 ):
-    portfolio_repo.insert(
-        make_metric(metric="sharpe_ratio")
-    )
+    portfolio_repo.insert(make_metric(metric="sharpe_ratio"))
 
-    portfolio_repo.insert(
-        make_metric(metric="max_drawdown")
-    )
+    portfolio_repo.insert(make_metric(metric="max_drawdown"))
 
-    portfolio_repo.insert(
-        make_metric(metric="cagr")
-    )
+    portfolio_repo.insert(make_metric(metric="cagr"))
 
-    metrics = portfolio_repo.get_by_strategy(
-        "momentum_v1"
-    )
+    metrics = portfolio_repo.get_by_strategy("momentum_v1")
 
     assert len(metrics) == 3
 
@@ -106,6 +94,7 @@ def test_get_by_strategy_returns_multiple_metrics(
 # ============================================================
 # get_by_date_range()
 # ============================================================
+
 
 def test_get_by_date_range_returns_correct_records(
     portfolio_repo,
@@ -194,6 +183,7 @@ def test_get_by_date_range_returns_empty(
 # get_by_metric()
 # ============================================================
 
+
 def test_get_by_metric_returns_matching(
     portfolio_repo,
 ):
@@ -218,9 +208,7 @@ def test_get_by_metric_returns_matching(
         )
     )
 
-    metrics = portfolio_repo.get_by_metric(
-        "sharpe_ratio"
-    )
+    metrics = portfolio_repo.get_by_metric("sharpe_ratio")
 
     assert len(metrics) == 2
 
@@ -228,9 +216,7 @@ def test_get_by_metric_returns_matching(
 def test_get_by_metric_returns_empty(
     portfolio_repo,
 ):
-    metrics = portfolio_repo.get_by_metric(
-        "unknown_metric"
-    )
+    metrics = portfolio_repo.get_by_metric("unknown_metric")
 
     assert metrics == []
 
@@ -264,9 +250,7 @@ def test_get_by_metric_ordered_by_strategy_then_calculated_at(
         )
     )
 
-    metrics = portfolio_repo.get_by_metric(
-        "sharpe_ratio"
-    )
+    metrics = portfolio_repo.get_by_metric("sharpe_ratio")
 
     assert (
         metrics[0].strategy_name,
@@ -280,6 +264,7 @@ def test_get_by_metric_ordered_by_strategy_then_calculated_at(
 # ============================================================
 # bulk_insert()
 # ============================================================
+
 
 def test_bulk_insert_returns_count(
     portfolio_repo,
@@ -307,18 +292,15 @@ def test_bulk_insert_empty_returns_zero(
 # delete_by_strategy()
 # ============================================================
 
+
 def test_delete_by_strategy_removes_records(
     portfolio_repo,
 ):
     portfolio_repo.insert(make_metric())
 
-    portfolio_repo.delete_by_strategy(
-        "momentum_v1"
-    )
+    portfolio_repo.delete_by_strategy("momentum_v1")
 
-    metrics = portfolio_repo.get_by_strategy(
-        "momentum_v1"
-    )
+    metrics = portfolio_repo.get_by_strategy("momentum_v1")
 
     assert metrics == []
 
@@ -326,17 +308,11 @@ def test_delete_by_strategy_removes_records(
 def test_delete_by_strategy_returns_count(
     portfolio_repo,
 ):
-    portfolio_repo.insert(
-        make_metric(metric="sharpe_ratio")
-    )
+    portfolio_repo.insert(make_metric(metric="sharpe_ratio"))
 
-    portfolio_repo.insert(
-        make_metric(metric="max_drawdown")
-    )
+    portfolio_repo.insert(make_metric(metric="max_drawdown"))
 
-    deleted = portfolio_repo.delete_by_strategy(
-        "momentum_v1"
-    )
+    deleted = portfolio_repo.delete_by_strategy("momentum_v1")
 
     assert deleted == 2
 
@@ -344,8 +320,6 @@ def test_delete_by_strategy_returns_count(
 def test_delete_by_strategy_returns_zero_for_unknown(
     portfolio_repo,
 ):
-    deleted = portfolio_repo.delete_by_strategy(
-        "unknown_strategy"
-    )
+    deleted = portfolio_repo.delete_by_strategy("unknown_strategy")
 
     assert deleted == 0

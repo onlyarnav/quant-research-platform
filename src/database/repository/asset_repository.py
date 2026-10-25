@@ -10,10 +10,11 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
-from src.utils.logger import get_logger
 from src.database.models.asset import Asset
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
 
 class AssetRepository:
     """Data access layer for Asset entities."""
@@ -94,11 +95,7 @@ class AssetRepository:
                 Asset.is_active.is_(True),
             )
 
-        return list(
-            self._session.scalars(
-                stmt.order_by(Asset.symbol)
-            )
-        )
+        return list(self._session.scalars(stmt.order_by(Asset.symbol)))
 
     def bulk_insert(
         self,
