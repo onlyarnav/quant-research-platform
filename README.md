@@ -2,10 +2,26 @@
 
 [![CI Pipeline](https://github.com/quant-research/quant-research-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/quant-research/quant-research-platform/actions)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
-[![Tests](https://img.shields.io/badge/tests-786%20passed-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/tests-799%20passed-brightgreen.svg)]()
+[![Coverage](https://img.shields.io/badge/coverage-85.2%25-brightgreen.svg)]()
 [![Code Style](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Release](https://img.shields.io/badge/version-1.0.0-blue.svg)]()
 
-A production-ready quantitative research, simulation, and execution platform tailored for Indian financial markets (NSE / NIFTY 500). Built strictly with institutional standards: capital-constrained execution simulation, portfolio allocation protocols, comprehensive trade analytics, FastAPI headless backend, interactive Streamlit frontend, automated DAG pipeline orchestration, and Docker microservices.
+A production-ready quantitative research, simulation, and execution platform tailored for Indian financial markets (NSE / NIFTY 500). Built strictly with institutional standards: capital-constrained execution simulation, portfolio allocation protocols, comprehensive trade analytics, FastAPI headless backend, interactive Streamlit frontend, automated DAG pipeline orchestration, and fully reproducible AWS production deployment.
+
+> **Important Legal Disclaimer:** This platform is developed exclusively for educational and academic research. It is **NOT registered with SEBI** as an investment adviser or research analyst. No content or signals constitute financial advice. See [DISCLAIMER.md](DISCLAIMER.md) for full terms.
+
+---
+
+## Key Documentation & Reports
+
+- **Operator Runbook & Deployment:** [docs/DEPLOYMENT_AWS.md](docs/DEPLOYMENT_AWS.md)
+- **Pre-Deployment Checklist (A-to-Z):** [docs/PRE_DEPLOYMENT_CHECKLIST.md](docs/PRE_DEPLOYMENT_CHECKLIST.md)
+- **Verification & Benchmarks Matrix:** [docs/VERIFICATION_REPORT.md](docs/VERIFICATION_REPORT.md)
+- **Codebase Cleanup Report:** [docs/CLEANUP_REPORT.md](docs/CLEANUP_REPORT.md)
+- **Issue & Resolution Log:** [docs/ISSUES_LOG.md](docs/ISSUES_LOG.md)
+- **Security Policy:** [SECURITY.md](SECURITY.md)
+- **Changelog:** [CHANGELOG.md](CHANGELOG.md)
 
 ---
 

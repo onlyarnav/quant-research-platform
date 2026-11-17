@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly Backup Service for Quant Platform
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/quant
+ExecStart=/opt/quant/backup.sh
+User=root

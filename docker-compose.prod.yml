@@ -1,0 +1,219 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: quant-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-quantdb}
+    volumes:
+      - /opt/quant/pgdata:/var/lib/postgresql/data
+      - ./deploy/docker/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-quantdb}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - quant-internal
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  migrate:
+    image: ${ECR_REPO:-quant-platform}:${IMAGE_TAG:-v1.0.0}
+    container_name: quant-migrate
+    restart: "no"
+    command: ["migrate"]
+    env_file:
+      - path: ${ENV_FILE:-.env}
+        required: false
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quantdb}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - quant-internal
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  mlflow:
+    image: ${ECR_REPO:-quant-platform}:${IMAGE_TAG:-v1.0.0}
+    container_name: quant-mlflow
+    restart: unless-stopped
+    command:
+      - shell
+      - -c
+      - mlflow server --backend-store-uri postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/mlflowdb --default-artifact-root /app/data/mlflow-artifacts --host 0.0.0.0 --port 5000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - /opt/quant/mlflow-artifacts:/app/data/mlflow-artifacts
+    tmpfs:
+      - /tmp
+    networks:
+      - quant-internal
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  api:
+    image: ${ECR_REPO:-quant-platform}:${IMAGE_TAG:-v1.0.0}
+    container_name: quant-api
+    restart: unless-stopped
+    command: ["api"]
+    read_only: true
+    tmpfs:
+      - /tmp
+    env_file:
+      - path: ${ENV_FILE:-.env}
+        required: false
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quantdb}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    volumes:
+      - /opt/quant/data:/app/data
+      - /opt/quant/models:/app/models
+      - /opt/quant/logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - quant-internal
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  dashboard:
+    image: ${ECR_REPO:-quant-platform}:${IMAGE_TAG:-v1.0.0}
+    container_name: quant-dashboard
+    restart: unless-stopped
+    command: ["dashboard"]
+    read_only: true
+    tmpfs:
+      - /tmp
+    env_file:
+      - path: ${ENV_FILE:-.env}
+        required: false
+    environment:
+      DASHBOARD_API_URL: http://api:8000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quantdb}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    volumes:
+      - /opt/quant/data:/app/data
+      - /opt/quant/models:/app/models
+      - /opt/quant/logs:/app/logs
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8501/_stcore/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    networks:
+      - quant-internal
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  scheduler:
+    image: ${ECR_REPO:-quant-platform}:${IMAGE_TAG:-v1.0.0}
+    container_name: quant-scheduler
+    restart: unless-stopped
+    command: ["scheduler"]
+    read_only: true
+    tmpfs:
+      - /tmp
+    env_file:
+      - path: ${ENV_FILE:-.env}
+        required: false
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-quantdb}
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+    volumes:
+      - /opt/quant/data:/app/data
+      - /opt/quant/models:/app/models
+      - /opt/quant/logs:/app/logs
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - quant-internal
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  proxy:
+    image: caddy:2.8.4-alpine
+    container_name: quant-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./deploy/aws/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /opt/quant/caddy:/data
+    depends_on:
+      api:
+        condition: service_healthy
+      dashboard:
+        condition: service_healthy
+    networks:
+      - quant-internal
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+networks:
+  quant-internal:
+    driver: bridge

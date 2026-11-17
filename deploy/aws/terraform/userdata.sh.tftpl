@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Log all output to bootstrap.log
+exec > >(tee -a /var/log/user-data.log) 2>&1
+
+echo "[INFO] Starting Quant Platform Cloud-Init Bootstrap..."
+
+# 1. Update system packages
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -y
+apt-get upgrade -y
+apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release \
+    unzip \
+    jq \
+    xfsprogs
+
+# 2. Format and mount persistent EBS volume
+DATA_DEV="/dev/xvdf"
+# NVMe naming check
+if [ ! -b "$DATA_DEV" ]; then
+    DATA_DEV=$(lsblk -dpno NAME | grep -v "nvme0n1" | head -n 1 || true)
+fi
+
+if [ -n "$DATA_DEV" ] && [ -b "$DATA_DEV" ]; then
+    FSTYPE=$(blkid -o value -s TYPE "$DATA_DEV" || true)
+    if [ -z "$FSTYPE" ]; then
+        echo "[INFO] Formatting EBS data volume $DATA_DEV with XFS..."
+        mkfs -t xfs "$DATA_DEV"
+    fi
+    mkdir -p /opt/quant
+    UUID=$(blkid -s UUID -o value "$DATA_DEV")
+    if ! grep -q "$UUID" /etc/fstab; then
+        echo "UUID=$UUID /opt/quant xfs defaults,nofail 0 2" >> /etc/fstab
+    fi
+    mount -a
+else
+    mkdir -p /opt/quant
+fi
+
+# 3. Create non-root system user and groups
+if ! id "quant" &>/dev/null; then
+    groupadd -g 10001 quant
+    useradd -u 10001 -g quant -m -d /home/quant -s /bin/bash quant
+fi
+
+# 4. Create directory structure
+mkdir -p /opt/quant/{data,models,pgdata,mlflow-artifacts,logs,caddy,releases}
+chown -R 10001:10001 /opt/quant
+chmod 750 /opt/quant
+
+# 5. Install Docker & Docker Compose
+if ! command -v docker &>/dev/null; then
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sh get-docker.sh
+    usermod -aG docker ubuntu || true
+    usermod -aG docker quant || true
+    rm get-docker.sh
+fi
+
+# 6. Configure Swap Space (2 GB)
+if ! swapon --show | grep -q "/swapfile"; then
+    fallocate -l 2G /swapfile
+    chmod 600 /swapfile
+    mkswap /swapfile
+    swapon /swapfile
+    echo "/swapfile none swap sw 0 0" >> /etc/fstab
+fi
+
+# 7. Configure Docker daemon log rotation
+mkdir -p /etc/docker
+cat << 'EOF' > /etc/docker/daemon.json
+{
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "5"
+  }
+}
+EOF
+systemctl restart docker || true
+
+echo "[INFO] Bootstrap completed successfully."

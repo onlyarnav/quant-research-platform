@@ -1,0 +1,42 @@
+# Caddyfile for Quant Research Platform on AWS EC2
+# Automatic HTTPS via Let's Encrypt / ZeroSSL
+
+{$DOMAIN:localhost} {
+    encode zstd gzip
+
+    # Production Security Headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer"
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        -Server
+    }
+
+    # REST API Routing (/api/* -> api:8000)
+    handle /api/* {
+        reverse_proxy api:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Streamlit Research Dashboard (/* -> dashboard:8501)
+    handle {
+        reverse_proxy dashboard:8501 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up X-Forwarded-Proto {scheme}
+        }
+    }
+
+    # Access Logging to stdout in JSON format for CloudWatch / Docker log driver
+    log {
+        output stdout
+        format json
+    }
+}

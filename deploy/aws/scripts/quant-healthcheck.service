@@ -1,0 +1,8 @@
+[Unit]
+Description=Healthcheck Service for Quant Platform
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/quant
+ExecStart=/opt/quant/status.sh
+User=root

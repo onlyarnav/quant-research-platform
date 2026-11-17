@@ -1,0 +1,10 @@
+# Example Terraform variables for Quant Research Platform
+project_name       = "quant-platform"
+environment        = "prod"
+aws_region         = "ap-south-1"
+instance_type      = "t3.large"
+data_volume_gb     = 60
+domain             = ""
+alert_email        = "researcher@example.com"
+monthly_budget_usd = 60.0
+log_retention_days = 30
