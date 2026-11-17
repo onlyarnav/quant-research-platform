@@ -4,6 +4,8 @@ Interactive backtest submission and job tracking view.
 
 from __future__ import annotations
 
+import time
+
 import streamlit as st
 
 from src.dashboard.client import DashboardClient
@@ -48,6 +50,25 @@ def render(client: DashboardClient, run_id: str | None = None) -> None:
                 "Execution Lag (bars)", min_value=0, max_value=5, value=1
             )
             allow_short = st.checkbox("Allow Shorting", value=False)
+
+        from src.data_pipeline.universe import get_nse_equity_universe
+
+        try:
+            u_syms = [a.symbol for a in get_nse_equity_universe()]
+        except Exception:
+            u_syms = ["RELIANCE.NS", "TCS.NS", "INFY.NS", "HDFCBANK.NS", "ICICIBANK.NS"]
+        sel_symbols = st.multiselect(
+            "Investment Universe (Select Stocks)", options=u_syms, default=u_syms
+        )
+        d1, d2 = st.columns(2)
+        with d1:
+            start_date_str = st.text_input(
+                "Start Date (e.g. 2026-01-01, blank = full history)", value="2026-01-01"
+            )
+        with d2:
+            end_date_str = st.text_input(
+                "End Date (e.g. 2026-11-17, blank = latest)", value=""
+            )
 
         st.subheader("Risk & Friction Constraints")
         r1, r2, r3 = st.columns(3)
@@ -107,6 +128,9 @@ def render(client: DashboardClient, run_id: str | None = None) -> None:
             "cash_reserve": cash_res,
             "stop_loss_pct": stop_loss if stop_loss > 0 else None,
             "take_profit_pct": take_profit if take_profit > 0 else None,
+            "symbols": sel_symbols or None,
+            "start": start_date_str.strip() or None,
+            "end": end_date_str.strip() or None,
         }
 
         job_id, err = safe_call(client.submit_backtest, req)
@@ -115,6 +139,7 @@ def render(client: DashboardClient, run_id: str | None = None) -> None:
         else:
             st.success(f"Backtest job submitted successfully! Job ID: `{job_id}`")
             st.session_state["active_job_id"] = job_id
+            st.rerun()
 
     # Active Job Polling
     active_job = st.session_state.get("active_job_id")
@@ -125,12 +150,27 @@ def render(client: DashboardClient, run_id: str | None = None) -> None:
         if err:
             error_box(f"Error fetching job status: {err}")
         elif status_data:
-            st.info(
-                f"Job `{active_job}` Status: **{status_data.get('status', 'unknown').upper()}**"
-            )
-            if status_data.get("status") == "succeeded":
+            current_status = status_data.get("status", "unknown").lower()
+            c_info, c_action = st.columns([3, 1])
+            with c_info:
+                st.info(
+                    f"Job `{active_job}` Status: **{current_status.upper()}**"
+                )
+            with c_action:
+                if st.button("Dismiss", key="dismiss_job", use_container_width=True):
+                    st.session_state.pop("active_job_id", None)
+                    st.rerun()
+
+            if current_status == "succeeded":
                 st.success(
                     f"Backtest completed successfully! Generated Run ID: `{status_data.get('run_id')}`"
                 )
-            elif status_data.get("status") == "failed":
-                error_box(f"Backtest execution failed: {status_data.get('error')}")
+            elif current_status == "failed":
+                error_box(
+                    f"Backtest execution failed: {status_data.get('error')}\n\n"
+                    "Tip: Verify that signal parquets exist in `data/signals/` or run the pipeline first."
+                )
+            elif current_status in {"queued", "running"}:
+                with st.spinner("Executing simulation in background..."):
+                    time.sleep(1.5)
+                    st.rerun()

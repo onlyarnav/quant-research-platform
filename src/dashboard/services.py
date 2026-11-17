@@ -71,19 +71,14 @@ class DashboardService:
             try:
                 with open(rep_file, "r", encoding="utf-8") as f:
                     d = json.load(f)
+                keys = ("equity", "drawdown", "rolling_sharpe", "rolling_volatility",
+                        "monthly_returns", "trade_distribution", "pnl_by_symbol", "exposure")
                 rep = StrategyReport(
                     metrics=d.get("metrics", {}),
                     trade_stats=d.get("trade_stats", {}),
                     benchmark=d.get("benchmark"),
                     benchmark_label=d.get("benchmark_label"),
-                    equity=pd.DataFrame(d.get("equity", [])),
-                    drawdown=pd.DataFrame(d.get("drawdown", [])),
-                    rolling_sharpe=pd.DataFrame(d.get("rolling_sharpe", [])),
-                    rolling_volatility=pd.DataFrame(d.get("rolling_volatility", [])),
-                    monthly_returns=pd.DataFrame(d.get("monthly_returns", [])),
-                    trade_distribution=pd.DataFrame(d.get("trade_distribution", [])),
-                    pnl_by_symbol=pd.DataFrame(d.get("pnl_by_symbol", [])),
-                    exposure=pd.DataFrame(d.get("exposure", [])),
+                    **{k: pd.DataFrame(d.get(k, [])) for k in keys},
                 )
                 with self._lock:
                     self._report_cache[run_id] = (now, rep)
@@ -98,22 +93,19 @@ class DashboardService:
 
     def list_runs(self, limit: int = 100) -> list[dict[str, Any]]:
         """List summary records of completed backtests."""
-        runs = self.store.list_runs()
-        res = []
-        for r in runs[:limit]:
-            res.append(
-                {
-                    "run_id": r.run_id,
-                    "strategy_name": r.strategy_name,
-                    "created_at": r.created_at,
-                    "n_trades": r.n_trades,
-                    "final_equity": r.final_equity,
-                    "start_date": r.start_date,
-                    "end_date": r.end_date,
-                    "config": r.config,
-                }
-            )
-        return res
+        return [
+            {
+                "run_id": r.run_id,
+                "strategy_name": r.strategy_name,
+                "created_at": r.created_at,
+                "n_trades": r.n_trades,
+                "final_equity": r.final_equity,
+                "start_date": r.start_date,
+                "end_date": r.end_date,
+                "config": r.config,
+            }
+            for r in self.store.list_runs()[:limit]
+        ]
 
     def get_run(self, run_id: str) -> dict[str, Any]:
         """Get summary and config for a specific run."""
@@ -152,12 +144,9 @@ class DashboardService:
             raise ValueError("Rolling window must be at least 2.")
         _, output = self.store.load_run(run_id)
         hist = output.portfolio_history_df
-        s_df = rolling_sharpe(hist, window=window)
-        v_df = rolling_volatility(hist, window=window)
+        s_df, v_df = rolling_sharpe(hist, window=window), rolling_volatility(hist, window=window)
         if s_df.empty or v_df.empty:
-            return pd.DataFrame(
-                columns=["date", "rolling_sharpe", "rolling_volatility"]
-            )
+            return pd.DataFrame(columns=["date", "rolling_sharpe", "rolling_volatility"])
         return pd.merge(s_df, v_df, on="date")
 
     def get_monthly_returns(self, run_id: str) -> pd.DataFrame:
@@ -175,21 +164,19 @@ class DashboardService:
     ) -> tuple[list[dict[str, Any]], int]:
         """Get filtered and paginated trade records."""
         _, output = self.store.load_run(run_id)
-        trades_df = output.trades_df
-        if trades_df.empty:
+        df = output.trades_df
+        if df.empty:
             return [], 0
-
-        df = trades_df.copy()
+        df = df.copy()
+        if "entry_date" in df.columns:
+            df = df.sort_values("entry_date", ascending=False)
         if symbol:
             df = df[df["symbol"] == symbol]
         if start:
             df = df[pd.to_datetime(df["entry_date"]) >= pd.to_datetime(start)]
         if end:
             df = df[pd.to_datetime(df["exit_date"]) <= pd.to_datetime(end)]
-
-        total = len(df)
-        page = df.iloc[offset : offset + limit]
-        return page.to_dict(orient="records"), total
+        return df.iloc[offset : offset + limit].to_dict(orient="records"), len(df)
 
     def get_trade_distribution(self, run_id: str) -> pd.DataFrame:
         """Get trade return distribution histogram bins."""
@@ -201,22 +188,15 @@ class DashboardService:
         pos_df = output.positions_history_df
         if pos_df.empty:
             return pd.DataFrame(columns=["symbol", "weight", "market_value"])
-
         if on_date is not None:
             pos_df = pos_df[pd.to_datetime(pos_df["date"]) == pd.to_datetime(on_date)]
         else:
-            latest_d = pos_df["date"].max()
-            pos_df = pos_df[pos_df["date"] == latest_d]
-
+            pos_df = pos_df[pos_df["date"] == pos_df["date"].max()]
         tot_val = pos_df["market_value"].sum() if not pos_df.empty else 0.0
         weights = (pos_df["market_value"] / tot_val).fillna(0.0) if tot_val > 0 else 0.0
-        return pd.DataFrame(
-            {
-                "symbol": pos_df["symbol"],
-                "market_value": pos_df["market_value"],
-                "weight": weights,
-            }
-        ).reset_index(drop=True)
+        return pd.DataFrame({
+            "symbol": pos_df["symbol"], "market_value": pos_df["market_value"], "weight": weights
+        }).reset_index(drop=True)
 
     def get_benchmark(self, run_id: str) -> dict[str, Any] | None:
         """Get benchmark comparison metrics."""
@@ -257,7 +237,7 @@ class DashboardService:
         if signals.empty:
             return None, {"buy": 0, "neutral": 0, "sell": 0}
 
-        d0 = signals["date"].iloc[0]
+        d0 = signals["date"].max()
         latest_date = d0.isoformat() if hasattr(d0, "isoformat") else str(d0)
         counts = {
             "buy": int((signals["signal"] > 0).sum()),
@@ -271,16 +251,33 @@ class DashboardService:
         reg_dir = Path(getattr(settings, "MODEL_ARTIFACT_PATH", Path("models")))
         if not reg_dir.exists():
             return []
-        models = []
+        models: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for p in sorted(reg_dir.iterdir()):
+            latest_f = p / "LATEST"
+            if p.is_dir() and latest_f.exists():
+                ver = latest_f.read_text(encoding="utf-8").strip()
+                meta_f = p / ver / "metadata.json"
+                if meta_f.exists():
+                    try:
+                        d = json.loads(meta_f.read_text(encoding="utf-8"))
+                        models.append({
+                            "name": d.get("model_name", p.name),
+                            "version": d.get("version", ver),
+                            "created_at": d.get("created_at", time.ctime(p.stat().st_ctime)),
+                            "metrics": d.get("test_metrics") or d.get("val_metrics") or {},
+                        })
+                        seen.add(p.name)
+                    except Exception as exc:
+                        logger.warning("Error reading metadata for %s: %s", p.name, exc)
         for f in reg_dir.glob("*.pkl"):
-            models.append(
-                {
+            if f.stem not in seen:
+                models.append({
                     "name": f.stem,
                     "version": "1.0",
                     "created_at": time.ctime(f.stat().st_ctime),
                     "metrics": {},
-                }
-            )
+                })
         return models
 
     def pipeline_runs(self, limit: int = 20) -> list[dict[str, Any]]:

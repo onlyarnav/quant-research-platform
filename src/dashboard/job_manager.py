@@ -19,6 +19,8 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+_ACTIVE_THREADS: dict[str, threading.Thread] = {}
+
 
 class BacktestJobManager:
     """Manages asynchronous background execution of backtests with disk persistence."""
@@ -48,6 +50,16 @@ class BacktestJobManager:
                 try:
                     data = json.loads(f.read_text(encoding="utf-8"))
                     if data.get("status") in {"running", "queued"}:
+                        jid = data.get("job_id")
+                        t = _ACTIVE_THREADS.get(jid)
+                        if t and t.is_alive():
+                            continue
+                        try:
+                            created = datetime.fromisoformat(data.get("created_at", ""))
+                            if (datetime.now(timezone.utc) - created).total_seconds() < 300:
+                                continue
+                        except Exception:
+                            pass
                         data["status"] = "failed"
                         data["error"] = "Job interrupted by process termination."
                         data["updated_at"] = datetime.now(timezone.utc).isoformat()
@@ -118,7 +130,7 @@ class BacktestJobManager:
                     start=req.get("start"),
                     end=req.get("end"),
                     persist=True,
-                    persist_db=False,
+                    persist_db=req.get("persist_db", True),
                 )
                 with self._lock:
                     job_data["status"] = "succeeded"
@@ -133,7 +145,11 @@ class BacktestJobManager:
                     job_data["updated_at"] = datetime.now(timezone.utc).isoformat()
                     self._atomic_write_job(job_data)
 
+            finally:
+                _ACTIVE_THREADS.pop(job_id, None)
+
         thread = threading.Thread(target=_worker, daemon=True)
+        _ACTIVE_THREADS[job_id] = thread
         thread.start()
         return job_id
 

@@ -95,6 +95,8 @@ def main(argv: list[str] | None = None) -> int:
         )
 
         resolved_type = MODEL_ALIASES.get(args.model_type, args.model_type)
+        if resolved_type == "xgboost" and "early_stopping_rounds" not in hyperparams:
+            hyperparams["early_stopping_rounds"] = None
         model = create_model(resolved_type, **hyperparams)
         metrics = pipeline.run(
             model=model,

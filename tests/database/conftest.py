@@ -40,6 +40,9 @@ def session(engine):
 
     connection = engine.connect()
     transaction = connection.begin()
+    from sqlalchemy import text
+    for t in ("trades", "portfolio_metrics", "signals", "prices", "features", "assets"):
+        connection.execute(text(f"DELETE FROM {t};"))
 
     session = Session(connection)
 

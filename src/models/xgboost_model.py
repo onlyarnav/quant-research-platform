@@ -28,6 +28,7 @@ class XGBoostModel(BaseModel):
         n_estimators: int = 100,
         max_depth: int = 6,
         learning_rate: float = 0.1,
+        early_stopping_rounds: int | None = 20,
         **kwargs,
     ) -> None:
         """
@@ -37,6 +38,7 @@ class XGBoostModel(BaseModel):
             n_estimators: Number of boosting rounds.
             max_depth: Maximum depth of a tree.
             learning_rate: Step size shrinkage used in update to prevent overfitting.
+            early_stopping_rounds: Early stopping patience. Defaults to 20.
             **kwargs: Additional arguments passed to xgboost.XGBRegressor.
         """
         super().__init__(
@@ -45,12 +47,14 @@ class XGBoostModel(BaseModel):
                 "n_estimators": n_estimators,
                 "max_depth": max_depth,
                 "learning_rate": learning_rate,
+                "early_stopping_rounds": early_stopping_rounds,
                 **kwargs,
             },
         )
         self.n_estimators = n_estimators
         self.max_depth = max_depth
         self.learning_rate = learning_rate
+        self.early_stopping_rounds = early_stopping_rounds
         self.kwargs = kwargs
 
     def fit(
@@ -70,12 +74,13 @@ class XGBoostModel(BaseModel):
             y_val: Validation targets for early stopping.
         """
         has_validation = X_val is not None and y_val is not None
+        es_rounds = self.early_stopping_rounds if has_validation else None
 
         self._model = xgb.XGBRegressor(
             n_estimators=self.n_estimators,
             max_depth=self.max_depth,
             learning_rate=self.learning_rate,
-            early_stopping_rounds=20 if has_validation else None,
+            early_stopping_rounds=es_rounds,
             **self.kwargs,
         )
 

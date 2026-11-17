@@ -93,6 +93,7 @@ def main(argv: list[str] | None = None) -> int:
                 asset_class=args.asset_class,
                 timeframe=args.timeframe,
             )
+        symbols = [s for s in symbols if not s.startswith("^")]
 
         if not symbols:
             raise ValueError(

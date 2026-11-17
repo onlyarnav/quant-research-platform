@@ -54,7 +54,7 @@ def render(client: DashboardClient, run_id: str | None = None) -> None:
     c1, c2 = st.columns(2)
     with c1:
         sym_filter = (
-            st.text_input("Filter by Symbol (e.g. AAPL)", value="").strip().upper()
+            st.text_input("Filter by Symbol (e.g. RELIANCE.NS)", value="").strip().upper()
             or None
         )
     with c2:
@@ -77,6 +77,8 @@ def render(client: DashboardClient, run_id: str | None = None) -> None:
 
     if items:
         df_display = pd.DataFrame(items)
+        if "entry_date" in df_display.columns:
+            df_display = df_display.sort_values("entry_date", ascending=False)
         st.dataframe(df_display, use_container_width=True)
         download_csv_button(df_display, f"{run_id}_trades.csv")
     else:

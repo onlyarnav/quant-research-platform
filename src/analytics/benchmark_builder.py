@@ -98,10 +98,18 @@ class BenchmarkBuilder:
             Canonical benchmark DataFrame or None if index file does not exist.
         """
         sym = symbol or settings.BENCHMARK_SYMBOL
-        file_path = self.processed_path / asset_class / timeframe / f"{sym}.parquet"
+        candidates = [sym, "^NSEI"] if sym in ("NIFTY50", "^NSEI") else [sym]
+        file_path = None
+        for s in candidates:
+            p = self.processed_path / asset_class / timeframe / f"{s}.parquet"
+            if not p.exists():
+                p = self.processed_path / asset_class / f"{asset_class}_{s}_{timeframe}.parquet"
+            if p.exists():
+                file_path = p
+                break
 
-        if not file_path.exists():
-            logger.warning("Benchmark index file not found: %s", file_path)
+        if not file_path:
+            logger.warning("Benchmark index file not found for: %s", sym)
             return None
 
         try:
@@ -258,13 +266,22 @@ class BenchmarkBuilder:
                 pd.to_datetime(pd.Series(dates)).sort_values().drop_duplicates()
             )
             bench_df["date"] = pd.to_datetime(bench_df["date"])
+            t_tz = getattr(target_dates.iloc[0], "tz", None) if not target_dates.empty else None
+            b_tz = getattr(bench_df["date"].iloc[0], "tz", None) if not bench_df.empty else None
+            if t_tz is None and b_tz is not None:
+                bench_df["date"] = bench_df["date"].dt.tz_localize(None)
+            elif t_tz is not None and b_tz is None:
+                bench_df["date"] = bench_df["date"].dt.tz_localize(t_tz)
+
+            target_dates_norm = target_dates.dt.normalize()
+            bench_df["date"] = bench_df["date"].dt.normalize()
             bench_indexed = bench_df.set_index("date").sort_index()
 
             # Reindex to target dates, forward fill missing <= 5 consecutive
-            reindexed = bench_indexed.reindex(target_dates).ffill(limit=5)
+            reindexed = bench_indexed.reindex(target_dates_norm).ffill(limit=5)
             # Drop any remaining unfillable rows
             valid = reindexed.dropna(subset=["portfolio_value"]).reset_index()
-            valid = valid.rename(columns={"index": "date"})
+            valid["date"] = target_dates.iloc[: len(valid)].reset_index(drop=True)
             if valid.empty:
                 raise ValueError(
                     "No overlapping dates between strategy and benchmark after alignment."

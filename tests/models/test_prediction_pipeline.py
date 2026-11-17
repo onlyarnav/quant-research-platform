@@ -2,7 +2,17 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from src.data_storage.parquet_writer import LAYER_PATH_MAP, DataLayer
 from src.models.prediction_pipeline import PredictionPipeline
+
+
+@pytest.fixture(autouse=True)
+def patch_predictions_layer(tmp_path, monkeypatch):
+    """Ensure all prediction pipeline tests write to isolated tmp_path."""
+    pred_dir = tmp_path / "predictions"
+    pred_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setitem(LAYER_PATH_MAP, DataLayer.PREDICTIONS, pred_dir)
+    return pred_dir
 
 
 def test_run_raises_on_empty_features_df(fitted_dummy_model):

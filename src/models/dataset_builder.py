@@ -78,9 +78,9 @@ class DatasetBuilder:
         """
         self.features_path = features_path or Path(settings.DATA_FEATURES_PATH)
 
-    def load_all_features(self) -> pd.DataFrame:
+    def load_all_features(self, asset_class: str = "equity") -> pd.DataFrame:
         """
-        Load all parquet feature files from features_path and concatenate them.
+        Load all parquet feature files for asset_class and concatenate them.
 
         Returns:
             A single DataFrame containing all symbols and dates.
@@ -88,12 +88,17 @@ class DatasetBuilder:
         Raises:
             ValueError: If no feature files are found in features_path.
         """
-        files = list(self.features_path.rglob("*.parquet"))
+        sub_dir = self.features_path / asset_class
+        target_dir = sub_dir if sub_dir.exists() else self.features_path
+        files = [
+            f for f in target_dir.glob("*.parquet")
+            if not f.name.startswith(f"{asset_class}_^") and not f.name.startswith("index_")
+        ] or list(target_dir.glob("*.parquet"))
         if not files:
-            logger.error("No feature files found in %s", self.features_path)
-            raise ValueError(f"No feature files found in {self.features_path}")
+            logger.error("No feature files found in %s", target_dir)
+            raise ValueError(f"No feature files found in {target_dir}")
 
-        logger.info("Loading %s feature files from %s", len(files), self.features_path)
+        logger.info("Loading %s feature files from %s", len(files), target_dir)
         dfs = [pd.read_parquet(f) for f in files]
         return pd.concat(dfs, ignore_index=True)
 

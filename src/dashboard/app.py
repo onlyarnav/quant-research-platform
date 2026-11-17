@@ -112,15 +112,21 @@ def main(client: DashboardClient | None = None) -> None:
         labels = {
             r["run_id"]: (
                 f"{r.get('strategy_name', 'strategy')} "
+                f"[{r.get('n_trades', 0)} trades] "
                 f"({str(r.get('created_at', ''))[:10]})"
             )
             for r in runs
         }
+        default_idx = 0
+        for i, r in enumerate(runs):
+            if r.get("n_trades", 0) > 0:
+                default_idx = i
+                break
         selected = st.sidebar.selectbox(
             "Selected Backtest Run",
             options=options,
             format_func=lambda x: labels.get(x, x),
-            index=0,
+            index=default_idx,
         )
         run_id = selected
     else:

@@ -15,7 +15,7 @@ class Asset(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     symbol: Mapped[str] = mapped_column(String(50))
     name: Mapped[str] = mapped_column(String(255))
-    asset_class: Mapped[str] = mapped_column(String(50), index=True)
+    asset_class: Mapped[str] = mapped_column(String(50))
     exchange: Mapped[str] = mapped_column(String(50))
     currency: Mapped[str] = mapped_column(String(20))
     sector: Mapped[str | None] = mapped_column(String(100))

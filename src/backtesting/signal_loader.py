@@ -75,7 +75,7 @@ class SignalLoader:
                 sym = stem[len(prefix) : -len(suffix)]
                 symbols.append(sym)
 
-        return sorted(set(symbols))
+        return sorted(s for s in set(symbols) if not s.startswith("^"))
 
     def load(
         self,

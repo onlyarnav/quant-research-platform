@@ -99,6 +99,9 @@ def normalize_yfinance_dataframe(
     ]
 
     normalized_df = normalized_df[selected_columns]
+    price_cols = [c for c in ["open", "high", "low", "close"] if c in normalized_df.columns]
+    if price_cols:
+        normalized_df = normalized_df.dropna(subset=price_cols)
     normalized_df = normalized_df.sort_values(["symbol", "date"]).reset_index(drop=True)
     return normalized_df
 

@@ -69,7 +69,7 @@ class SignalPipeline:
             except IndexError:
                 continue
 
-        return sorted(symbols)
+        return sorted(s for s in symbols if not s.startswith("^"))
 
     def run(
         self,

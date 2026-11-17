@@ -112,7 +112,7 @@ class PredictionStep:
 
         store = ModelStore()
         target_models = context.models or [
-            getattr(settings, "MODEL_NAME", "linear_regression")
+            getattr(settings, "MODEL_NAME", "xgboost_model")
         ]
 
         for m_name in target_models:
@@ -123,12 +123,13 @@ class PredictionStep:
 
         service = PredictionService(model_store=store)
         results: dict[str, int] = {}
+        scope = context.extras.get("prediction_scope", "all")
         for m_name in target_models:
             df = service.run(
                 model_name=m_name,
                 asset_class=context.asset_class,
                 timeframe=context.timeframe,
-                scope="latest",
+                scope=scope,
             )
             results[m_name] = len(df)
 
@@ -152,19 +153,26 @@ class SignalStep:
             TopNLongShortSignalGenerator as TopNSignalGenerator,
         )
 
-        gen_name = context.extras.get("signal_generator", "threshold")
+        gen_name = context.extras.get("signal_generator", "topn")
         generator: Any
         if gen_name == "rank":
             generator = RankSignalGenerator()
-        elif gen_name == "topn":
-            generator = TopNSignalGenerator(top_n=context.extras.get("top_n", 5))
+        elif gen_name == "threshold":
+            th = float(
+                context.extras.get(
+                    "signal_threshold", getattr(settings, "SIGNAL_THRESHOLD", 0.0005)
+                )
+            )
+            generator = ThresholdSignalGenerator(threshold=th)
         else:
-            generator = ThresholdSignalGenerator()
+            top_n = int(context.extras.get("top_n", 5))
+            generator = TopNSignalGenerator(top_n=top_n)
 
         pipeline = SignalPipeline()
         syms = context.symbols or pipeline.discover_symbols(
             asset_class=context.asset_class, timeframe=context.timeframe
         )
+        syms = [s for s in syms if not s.startswith("^")]
         if not syms:
             raise ValueError(
                 f"No prediction symbols found for signal generation in {context.asset_class}."
@@ -193,13 +201,16 @@ class BacktestStep:
 
         pipe = BacktestPipeline()
         cfg = context.backtest_config or BacktestConfig(strategy_name="daily")
+        syms = [s for s in (context.symbols or []) if not s.startswith("^")] or None
         res = pipe.run(
             config=cfg,
-            symbols=context.symbols,
+            symbols=syms,
             asset_class=context.asset_class,
             timeframe=context.timeframe,
+            start=context.extras.get("backtest_start") or "2026-01-01",
+            end=context.extras.get("backtest_end"),
             persist=True,
-            persist_db=False,
+            persist_db=context.extras.get("persist_db", True),
         )
         context.extras["run_id"] = res.run_id
         return {"run_id": res.run_id, "strategy_name": cfg.strategy_name}

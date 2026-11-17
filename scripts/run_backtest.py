@@ -174,28 +174,16 @@ def main() -> None:
             f"[INFO] Running backtest '{cfg.strategy_name}' across {sym_list or 'all'} symbols..."
         )
 
-    try:
-        res = pipeline.run(
-            config=cfg,
-            symbols=sym_list,
-            start=args.start,
-            end=args.end,
-            persist=True,
-            persist_db=args.persist_db,
-            signals_df=signals_df,
-            prices_df=prices_df,
-        )
-    except Exception as exc:
-        if not args.demo:
-            print(
-                f"[WARNING] Could not load data lake files ({exc}). Falling back to synthetic demo data..."
-            )
-            signals_df, prices_df = generate_demo_data()
-            res = pipeline.run(
-                config=cfg, signals_df=signals_df, prices_df=prices_df, persist=True
-            )
-        else:
-            raise exc
+    res = pipeline.run(
+        config=cfg,
+        symbols=sym_list,
+        start=args.start,
+        end=args.end,
+        persist=True,
+        persist_db=args.persist_db,
+        signals_df=signals_df,
+        prices_df=prices_df,
+    )
 
     m = res.report.metrics
     t = res.report.trade_stats

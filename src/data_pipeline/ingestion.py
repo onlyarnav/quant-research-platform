@@ -20,7 +20,7 @@ Usage:
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 import pandas as pd
 
@@ -214,10 +214,10 @@ class IngestionPipeline:
             Tuple of (start_date, end_date) strings in YYYY-MM-DD format,
             or (None, None) if no fetch is needed.
         """
-        today = date.today().isoformat()
+        end_date = (date.today() + timedelta(days=1)).isoformat()
 
         if self.mode == "full":
-            return self.start_date, today
+            return self.start_date, end_date
 
         # incremental mode
         if not self.writer.exists(
@@ -230,7 +230,7 @@ class IngestionPipeline:
                 "No existing data for symbol=%s. Running full fetch.",
                 asset.symbol,
             )
-            return self.start_date, today
+            return self.start_date, end_date
 
         existing_df = self.writer.read(
             layer=DataLayer.RAW,
@@ -240,7 +240,7 @@ class IngestionPipeline:
         )
 
         if existing_df.empty:
-            return self.start_date, today
+            return self.start_date, end_date
 
         last_date = pd.to_datetime(existing_df["date"]).max().date()
 
@@ -255,7 +255,7 @@ class IngestionPipeline:
             "Incremental fetch for symbol=%s from=%s to=%s",
             asset.symbol,
             incremental_start,
-            today,
+            end_date,
         )
 
-        return incremental_start, today
+        return incremental_start, end_date

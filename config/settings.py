@@ -81,11 +81,12 @@ class Settings(BaseSettings):
     MODEL_ARTIFACT_PATH: Path = _PROJECT_ROOT / "models"
     MLFLOW_EXPERIMENT_NAME: str = Field(default="quant-ml-research")
     FEATURE_SET_VERSION: str = Field(default="v1")
+    MODEL_NAME: str = Field(default="xgboost_model")
     WALK_FORWARD_SPLITS: int = Field(default=5)
     DRIFT_PSI_THRESHOLD: float = Field(default=0.2)
     DRIFT_MIN_ROWS: int = Field(default=200)
     RETRAIN_PROMOTION_TOLERANCE: float = Field(default=0.0)
-    SIGNAL_THRESHOLD: float = Field(default=0.01)
+    SIGNAL_THRESHOLD: float = Field(default=0.0005)
     SIGNAL_TOP_N: int = Field(default=10)
     SIGNAL_BOTTOM_N: int = Field(default=0)
 
