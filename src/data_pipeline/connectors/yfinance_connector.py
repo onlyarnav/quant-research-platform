@@ -19,53 +19,33 @@ adj_close, volume, source.
 
 from __future__ import annotations
 
-import logging
 import time
-from dataclasses import dataclass
 from typing import Iterable
 
 import pandas as pd
 import yfinance as yf
 
-from config.constants import (
-    ASSET_CLASS_EQUITY,
-    SOURCE_YFINANCE,
-    TIMEFRAME_DAILY,
+from src.data_pipeline.connectors.yfinance_helpers import (
+    REQUIRED_COLUMNS,
+    YFINANCE_COLUMN_MAP,
+    YFinanceConnectorError,
+    YFinanceDataValidationError,
+    YFinanceRequest,
+    normalize_yfinance_dataframe,
+    validate_yfinance_dataframe,
 )
+from src.utils.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
+__all__ = [
+    "YFinanceConnector",
+    "YFinanceRequest",
+    "YFinanceConnectorError",
+    "YFinanceDataValidationError",
+]
 
-class YFinanceConnectorError(Exception):
-    """Base exception for Yahoo Finance connector errors."""
-
-
-class YFinanceDataValidationError(YFinanceConnectorError):
-    """Raised when fetched data does not match the required schema."""
-
-
-@dataclass(frozen=True)
-class YFinanceRequest:
-    """
-    Request object for fetching Yahoo Finance data.
-
-    Attributes:
-        symbol: Yahoo Finance ticker symbol.
-        asset_class: Platform asset class, for example equity, index, etf.
-        exchange: Exchange or venue, for example NSE, BSE, NASDAQ.
-        currency: Trading currency, for example INR, USD.
-        start_date: Inclusive start date in YYYY-MM-DD format.
-        end_date: Exclusive end date in YYYY-MM-DD format.
-        timeframe: Data interval. Currently defaults to daily.
-    """
-
-    symbol: str
-    asset_class: str = ASSET_CLASS_EQUITY
-    exchange: str = "NSE"
-    currency: str = "INR"
-    start_date: str | None = None
-    end_date: str | None = None
-    timeframe: str = TIMEFRAME_DAILY
+logger = get_logger(__name__)
 
 
 class YFinanceConnector:
@@ -77,33 +57,9 @@ class YFinanceConnector:
     schema normalization, and rate limiting consistent across the platform.
     """
 
-    REQUIRED_COLUMNS: tuple[str, ...] = (
-        "symbol",
-        "asset_class",
-        "exchange",
-        "currency",
-        "date",
-        "open",
-        "high",
-        "low",
-        "close",
-        "source",
-    )
-
-    OPTIONAL_COLUMNS: tuple[str, ...] = (
-        "adj_close",
-        "volume",
-    )
-
-    YFINANCE_COLUMN_MAP: dict[str, str] = {
-        "Date": "date",
-        "Open": "open",
-        "High": "high",
-        "Low": "low",
-        "Close": "close",
-        "Adj Close": "adj_close",
-        "Volume": "volume",
-    }
+    REQUIRED_COLUMNS = REQUIRED_COLUMNS
+    OPTIONAL_COLUMNS: tuple[str, ...] = ("adj_close", "volume")
+    YFINANCE_COLUMN_MAP = YFINANCE_COLUMN_MAP
 
     INTERVAL_MAP: dict[str, str] = {
         "daily": "1d",
@@ -304,110 +260,12 @@ class YFinanceConnector:
         df: pd.DataFrame,
         request: YFinanceRequest,
     ) -> pd.DataFrame:
-        """
-        Normalize raw yfinance output into project schema.
-        """
-
-        normalized_df = df.copy()
-
-        normalized_df = normalized_df.reset_index()
-        normalized_df = normalized_df.rename(columns=self.YFINANCE_COLUMN_MAP)
-
-        normalized_df["symbol"] = request.symbol
-        normalized_df["asset_class"] = request.asset_class
-        normalized_df["exchange"] = request.exchange
-        normalized_df["currency"] = request.currency
-        normalized_df["source"] = SOURCE_YFINANCE
-
-        if "adj_close" not in normalized_df.columns:
-            normalized_df["adj_close"] = pd.NA
-
-        if "volume" not in normalized_df.columns:
-            normalized_df["volume"] = pd.NA
-
-        normalized_df["date"] = pd.to_datetime(normalized_df["date"], utc=True)
-
-        selected_columns = [
-            "symbol",
-            "asset_class",
-            "exchange",
-            "currency",
-            "date",
-            "open",
-            "high",
-            "low",
-            "close",
-            "adj_close",
-            "volume",
-            "source",
-        ]
-
-        normalized_df = normalized_df[selected_columns]
-        normalized_df = normalized_df.sort_values(["symbol", "date"])
-        normalized_df = normalized_df.reset_index(drop=True)
-
-        return normalized_df
+        """Normalize raw yfinance output into project schema."""
+        return normalize_yfinance_dataframe(df, request)
 
     def _validate_dataframe(self, df: pd.DataFrame) -> None:
-        """
-        Validate normalized market data against required schema rules.
-        """
-
-        missing_columns = [
-            column for column in self.REQUIRED_COLUMNS if column not in df.columns
-        ]
-
-        if missing_columns:
-            raise YFinanceDataValidationError(
-                f"Missing required columns: {missing_columns}"
-            )
-
-        null_required_columns = [
-            column for column in self.REQUIRED_COLUMNS if df[column].isna().any()
-        ]
-
-        if null_required_columns:
-            raise YFinanceDataValidationError(
-                f"Null values found in required columns: {null_required_columns}"
-            )
-
-        duplicate_count = df.duplicated(subset=["symbol", "date"]).sum()
-        if duplicate_count > 0:
-            raise YFinanceDataValidationError(
-                f"Found duplicate rows for primary index (symbol, date): "
-                f"{duplicate_count}"
-            )
-
-        invalid_high_low_count = (df["high"] < df["low"]).sum()
-        if invalid_high_low_count > 0:
-            raise YFinanceDataValidationError(
-                f"Found rows where high < low: {invalid_high_low_count}"
-            )
-
-        invalid_high_open_close_count = (
-            (df["high"] < df["open"]) | (df["high"] < df["close"])
-        ).sum()
-        if invalid_high_open_close_count > 0:
-            raise YFinanceDataValidationError(
-                "Found rows where high is less than open or close: "
-                f"{invalid_high_open_close_count}"
-            )
-
-        invalid_low_open_close_count = (
-            (df["low"] > df["open"]) | (df["low"] > df["close"])
-        ).sum()
-        if invalid_low_open_close_count > 0:
-            raise YFinanceDataValidationError(
-                "Found rows where low is greater than open or close: "
-                f"{invalid_low_open_close_count}"
-            )
-
-        if "volume" in df.columns:
-            negative_volume_count = (df["volume"].fillna(0) < 0).sum()
-            if negative_volume_count > 0:
-                raise YFinanceDataValidationError(
-                    f"Found negative volume rows: {negative_volume_count}"
-                )
+        """Validate normalized market data against required schema rules."""
+        validate_yfinance_dataframe(df)
 
     def _resolve_interval(self, timeframe: str) -> str:
         """

@@ -23,6 +23,7 @@ from src.backtesting.position_book import PositionBook
 from src.backtesting.simulator_accounting import (
     assemble_simulation_output,
     record_snapshots,
+    validate_simulator_inputs,
 )
 from src.backtesting.simulator_execution import (
     apply_signals,
@@ -67,30 +68,11 @@ class WeightedPortfolioSimulator:
         self.allocator = allocator
         self._trade_id_counter = itertools.count(1)
 
-    def _validate_inputs(
-        self, signals_df: pd.DataFrame, prices_df: pd.DataFrame
-    ) -> None:
-        """Validate input DataFrames using canonical platform error messages."""
-        if signals_df is None or signals_df.empty:
-            raise ValueError("signals_df cannot be empty.")
-        if prices_df is None or prices_df.empty:
-            raise ValueError("prices_df cannot be empty.")
-
-        req_sig = {"symbol", "date", "signal"}
-        missing_sig = req_sig - set(signals_df.columns)
-        if missing_sig:
-            raise ValueError(f"signals_df missing required columns: {missing_sig}")
-
-        req_px = {"symbol", "date", "close"}
-        missing_px = req_px - set(prices_df.columns)
-        if missing_px:
-            raise ValueError(f"prices_df missing required columns: {missing_px}")
-
     def run(
         self, signals_df: pd.DataFrame, prices_df: pd.DataFrame
     ) -> SimulationOutput:
         """Execute backtest simulation across the given signals and prices."""
-        self._validate_inputs(signals_df, prices_df)
+        validate_simulator_inputs(signals_df, prices_df)
 
         signals = signals_df.copy()
         prices = prices_df.copy()

@@ -6,7 +6,8 @@ Provides pure calculation helpers for slippage, fees, PnL, snapshots, and schema
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+import itertools
+from dataclasses import asdict
 from typing import Any
 
 import pandas as pd
@@ -41,42 +42,6 @@ CANONICAL_HISTORY_COLS = [
     "cumulative_return",
     "drawdown",
 ]
-
-
-@dataclass(slots=True)
-class ExecutionFill:
-    """Calculated fill price and leg transaction costs."""
-
-    reference_price: float
-    executed_price: float
-    fee: float
-    slippage_cost: float
-
-
-def compute_fill(
-    price: float,
-    quantity: float,
-    side: int,
-    is_entry: bool,
-    transaction_cost: float,
-    slippage: float,
-) -> ExecutionFill:
-    """Compute execution price and leg transaction costs."""
-    is_buy = (side == 1 and is_entry) or (side == -1 and not is_entry)
-    if is_buy:
-        exec_price = price * (1.0 + slippage)
-        slip_cost = (exec_price - price) * quantity
-    else:
-        exec_price = price * (1.0 - slippage)
-        slip_cost = (price - exec_price) * quantity
-
-    fee = transaction_cost * exec_price * quantity
-    return ExecutionFill(
-        reference_price=price,
-        executed_price=exec_price,
-        fee=fee,
-        slippage_cost=slip_cost,
-    )
 
 
 def empty_trades_df() -> pd.DataFrame:
@@ -239,3 +204,74 @@ def assemble_simulation_output(
         positions_history_df=pos_df,
         summary=summary,
     )
+
+
+def record_trade(
+    counter: itertools.count[int],
+    symbol: str,
+    side: int,
+    price: float,
+    date: pd.Timestamp,
+    lot: Any,
+    reason: str,
+    trades: list[Trade],
+    trade_details: list[dict[str, Any]],
+    fill: Any,
+) -> None:
+    """Create and append Trade and trade details records."""
+    t_id = next(counter)
+    total_fees = lot.entry_fee_share + fill.fee
+    total_slippage = lot.entry_slippage_share + fill.slippage_cost
+    gross = (
+        (fill.executed_price - lot.avg_entry_price) * lot.quantity
+        if side == 1
+        else (lot.avg_entry_price - fill.executed_price) * lot.quantity
+    )
+    net_pnl = gross - total_fees
+    cost_basis = lot.avg_entry_price * lot.quantity
+    ret_pct = net_pnl / cost_basis if cost_basis > 0 else 0.0
+
+    trades.append(
+        Trade(
+            trade_id=t_id,
+            symbol=symbol,
+            entry_date=lot.entry_date,
+            exit_date=date,
+            entry_price=lot.avg_entry_price,
+            exit_price=fill.executed_price,
+            position_size=lot.quantity,
+            fees=total_fees,
+            slippage_cost=total_slippage,
+            pnl=net_pnl,
+            return_pct=ret_pct,
+        )
+    )
+    trade_details.append(
+        {
+            "trade_id": t_id,
+            "side": "long" if side == 1 else "short",
+            "exit_reason": reason,
+            "gross_pnl": gross,
+            "holding_days": (date - lot.entry_date).days,
+        }
+    )
+
+
+def validate_simulator_inputs(
+    signals_df: pd.DataFrame, prices_df: pd.DataFrame
+) -> None:
+    """Validate input DataFrames using canonical platform error messages."""
+    if signals_df is None or signals_df.empty:
+        raise ValueError("signals_df cannot be empty.")
+    if prices_df is None or prices_df.empty:
+        raise ValueError("prices_df cannot be empty.")
+
+    req_sig = {"symbol", "date", "signal"}
+    missing_sig = req_sig - set(signals_df.columns)
+    if missing_sig:
+        raise ValueError(f"signals_df missing required columns: {missing_sig}")
+
+    req_px = {"symbol", "date", "close"}
+    missing_px = req_px - set(prices_df.columns)
+    if missing_px:
+        raise ValueError(f"prices_df missing required columns: {missing_px}")

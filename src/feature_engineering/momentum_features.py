@@ -292,11 +292,6 @@ class MomentumFeatureGenerator:
         if missing_columns:
             raise ValueError(f"Missing required columns: {missing_columns}")
 
-        if df["symbol"].isna().any():
-            raise ValueError("Column 'symbol' contains null values.")
-
-        if df["date"].isna().any():
-            raise ValueError("Column 'date' contains null values.")
-
-        if df["close"].isna().any():
-            raise ValueError("Column 'close' contains null values.")
+        for col in ["symbol", "date", "close"]:
+            if df[col].isna().any():
+                raise ValueError(f"Column '{col}' contains null values.")
