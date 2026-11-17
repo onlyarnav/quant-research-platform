@@ -17,6 +17,22 @@ from typing import Any
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from config.settings_validators import (
+    validate_allocation_method,
+    validate_app_env,
+    validate_log_format,
+    validate_non_negative_float,
+    validate_optional_str,
+    validate_pipeline_run_time,
+    validate_positive_float,
+    validate_positive_int,
+    validate_ratio_in_zero_one,
+    validate_rebalance_frequency,
+    validate_stop_and_take_profit,
+    validate_update_mode,
+    validate_workers,
+)
+
 _PROJECT_ROOT = Path(__file__).parent.parent
 
 
@@ -110,28 +126,28 @@ class Settings(BaseSettings):
     DASHBOARD_API_KEY: str | None = Field(default=None)
     DASHBOARD_CACHE_TTL_SECONDS: int = Field(default=60)
 
+    # ── Production Environment & Hardening Settings ───────────
+    APP_ENV: str = Field(default="dev")
+    LOG_LEVEL: str = Field(default="INFO")
+    LOG_FORMAT: str = Field(default="text")
+    API_ROOT_PATH: str = Field(default="")
+    API_WORKERS: int = Field(default=1)
+    API_CORS_ORIGINS: str = Field(default="")
+    API_DOCS_ENABLED: bool = Field(default=True)
+    DASHBOARD_READ_ONLY: bool = Field(default=False)
+    DASHBOARD_PASSWORD: str | None = Field(default=None)
+    BACKTEST_MAX_CONCURRENT_JOBS: int = Field(default=1)
+
     # ── Validators ────────────────────────────────────────────
     @field_validator("DATA_UPDATE_MODE")
     @classmethod
-    def validate_update_mode(cls, v: str) -> str:
-        allowed = {"full", "incremental"}
-        if v not in allowed:
-            raise ValueError(f"DATA_UPDATE_MODE must be one of {allowed}, got '{v}'")
-        return v
+    def val_update_mode(cls, v: str) -> str:
+        return validate_update_mode(v)
 
-    @field_validator("TRAIN_SPLIT_RATIO")
+    @field_validator("TRAIN_SPLIT_RATIO", "VAL_SPLIT_RATIO")
     @classmethod
-    def validate_train_split_ratio(cls, v: float) -> float:
-        if not (0.0 < v < 1.0):
-            raise ValueError(f"TRAIN_SPLIT_RATIO must be in (0, 1), got {v}")
-        return v
-
-    @field_validator("VAL_SPLIT_RATIO")
-    @classmethod
-    def validate_val_split_ratio(cls, v: float) -> float:
-        if not (0.0 < v < 1.0):
-            raise ValueError(f"VAL_SPLIT_RATIO must be in (0, 1), got {v}")
-        return v
+    def val_splits(cls, v: float, info: Any) -> float:
+        return validate_ratio_in_zero_one(v, info.field_name)
 
     @model_validator(mode="after")
     def validate_split_ratios_sum(self) -> Settings:
@@ -142,140 +158,108 @@ class Settings(BaseSettings):
             )
         return self
 
-    @field_validator("WALK_FORWARD_SPLITS")
+    @field_validator("WALK_FORWARD_SPLITS", "DRIFT_MIN_ROWS", "SIGNAL_TOP_N")
     @classmethod
-    def validate_walk_forward_splits(cls, v: int) -> int:
-        if v < 1:
-            raise ValueError(f"WALK_FORWARD_SPLITS must be >= 1, got {v}")
-        return v
+    def val_pos_ints(cls, v: int, info: Any) -> int:
+        return validate_positive_int(v, info.field_name)
 
     @field_validator("DRIFT_PSI_THRESHOLD")
     @classmethod
-    def validate_drift_psi_threshold(cls, v: float) -> float:
-        if v <= 0:
-            raise ValueError(f"DRIFT_PSI_THRESHOLD must be > 0, got {v}")
-        return v
+    def val_pos_floats(cls, v: float, info: Any) -> float:
+        return validate_positive_float(v, info.field_name)
 
-    @field_validator("DRIFT_MIN_ROWS")
+    @field_validator(
+        "RETRAIN_PROMOTION_TOLERANCE",
+        "SIGNAL_BOTTOM_N",
+        "SIGNAL_THRESHOLD",
+        "BACKTEST_EXECUTION_LAG",
+    )
     @classmethod
-    def validate_drift_min_rows(cls, v: int) -> int:
-        if v < 1:
-            raise ValueError(f"DRIFT_MIN_ROWS must be >= 1, got {v}")
-        return v
-
-    @field_validator("RETRAIN_PROMOTION_TOLERANCE")
-    @classmethod
-    def validate_retrain_promotion_tolerance(cls, v: float) -> float:
-        if v < 0:
-            raise ValueError(f"RETRAIN_PROMOTION_TOLERANCE must be >= 0, got {v}")
-        return v
-
-    @field_validator("SIGNAL_TOP_N")
-    @classmethod
-    def validate_signal_top_n(cls, v: int) -> int:
-        if v < 1:
-            raise ValueError(f"SIGNAL_TOP_N must be >= 1, got {v}")
-        return v
-
-    @field_validator("SIGNAL_BOTTOM_N")
-    @classmethod
-    def validate_signal_bottom_n(cls, v: int) -> int:
-        if v < 0:
-            raise ValueError(f"SIGNAL_BOTTOM_N must be >= 0, got {v}")
-        return v
-
-    @field_validator("SIGNAL_THRESHOLD")
-    @classmethod
-    def validate_signal_threshold(cls, v: float) -> float:
-        if v < 0:
-            raise ValueError(f"SIGNAL_THRESHOLD must be >= 0, got {v}")
-        return v
+    def val_non_neg(cls, v: float, info: Any) -> float:
+        return validate_non_negative_float(v, info.field_name)
 
     @field_validator("BACKTEST_CASH_RESERVE")
     @classmethod
-    def validate_backtest_cash_reserve(cls, v: float) -> float:
+    def val_cash_reserve(cls, v: float) -> float:
         if not (0.0 <= v < 1.0):
             raise ValueError(f"BACKTEST_CASH_RESERVE must be in [0, 1), got {v}")
         return v
 
-    @field_validator("BACKTEST_EXECUTION_LAG")
-    @classmethod
-    def validate_backtest_execution_lag(cls, v: int) -> int:
-        if v < 0:
-            raise ValueError(f"BACKTEST_EXECUTION_LAG must be >= 0, got {v}")
-        return v
-
     @field_validator("BACKTEST_ALLOCATION_METHOD")
     @classmethod
-    def validate_backtest_allocation_method(cls, v: str) -> str:
-        allowed = {
-            "fixed_notional",
-            "equal_weight",
-            "signal_weighted",
-            "volatility_weighted",
-            "risk_parity",
-            "mean_variance",
-        }
-        if v not in allowed:
-            raise ValueError(
-                f"BACKTEST_ALLOCATION_METHOD must be one of {allowed}, got '{v}'"
-            )
-        return v
+    def val_alloc(cls, v: str) -> str:
+        return validate_allocation_method(v)
 
     @field_validator("BACKTEST_REBALANCE_FREQUENCY")
     @classmethod
-    def validate_backtest_rebalance_frequency(cls, v: str) -> str:
-        allowed = {"on_signal", "daily", "weekly", "monthly"}
-        if v not in allowed:
-            raise ValueError(
-                f"BACKTEST_REBALANCE_FREQUENCY must be one of {allowed}, got '{v}'"
-            )
-        return v
+    def val_rebal(cls, v: str) -> str:
+        return validate_rebalance_frequency(v)
 
     @field_validator("BACKTEST_STOP_LOSS", "BACKTEST_TAKE_PROFIT", mode="before")
     @classmethod
-    def validate_stop_and_take_profit(cls, v: Any) -> float | None:
-        if v is None or v == "":
-            return None
-        v_float = float(v)
-        if not (0.0 < v_float <= 1.0):
-            raise ValueError(f"Stop loss/take profit must be in (0, 1], got {v_float}")
-        return v_float
+    def val_stop_tp(cls, v: Any) -> float | None:
+        return validate_stop_and_take_profit(v)
 
     @field_validator("ROLLING_WINDOW")
     @classmethod
-    def validate_rolling_window(cls, v: int) -> int:
-        if v < 2:
-            raise ValueError(f"ROLLING_WINDOW must be >= 2, got {v}")
-        return v
+    def val_roll_win(cls, v: int) -> int:
+        return validate_positive_int(v, "ROLLING_WINDOW", min_val=2)
 
     @field_validator("VAR_CONFIDENCE")
     @classmethod
-    def validate_var_confidence(cls, v: float) -> float:
-        if not (0.0 < v < 1.0):
-            raise ValueError(f"VAR_CONFIDENCE must be in (0, 1), got {v}")
-        return v
+    def val_var_conf(cls, v: float) -> float:
+        return validate_ratio_in_zero_one(v, "VAR_CONFIDENCE")
 
     @field_validator("TRADING_DAYS_PER_YEAR")
     @classmethod
-    def validate_trading_days_per_year(cls, v: int) -> int:
-        if v < 1:
-            raise ValueError(f"TRADING_DAYS_PER_YEAR must be >= 1, got {v}")
-        return v
+    def val_trade_days(cls, v: int) -> int:
+        return validate_positive_int(v, "TRADING_DAYS_PER_YEAR", min_val=1)
 
     @field_validator("API_PORT")
     @classmethod
-    def validate_api_port(cls, v: int) -> int:
+    def val_port(cls, v: int) -> int:
         if not (1 <= v <= 65535):
             raise ValueError(f"API_PORT must be in 1-65535, got {v}")
         return v
 
-    @field_validator("DASHBOARD_API_URL", "DASHBOARD_API_KEY", mode="before")
+    @field_validator(
+        "DASHBOARD_API_URL",
+        "DASHBOARD_API_KEY",
+        "DASHBOARD_PASSWORD",
+        mode="before",
+    )
     @classmethod
-    def validate_optional_strings(cls, v: Any) -> Any:
-        if v == "" or v is None:
-            return None
-        return v
+    def val_opt_str(cls, v: Any) -> str | None:
+        return validate_optional_str(v)
+
+    @field_validator("APP_ENV")
+    @classmethod
+    def val_env(cls, v: str) -> str:
+        return validate_app_env(v)
+
+    @field_validator("LOG_FORMAT")
+    @classmethod
+    def val_log_fmt(cls, v: str) -> str:
+        return validate_log_format(v)
+
+    @field_validator("PIPELINE_RUN_TIME")
+    @classmethod
+    def val_pipe_time(cls, v: str) -> str:
+        return validate_pipeline_run_time(v)
+
+    @field_validator("API_WORKERS")
+    @classmethod
+    def val_workers(cls, v: int) -> int:
+        return validate_workers(v)
+
+    @model_validator(mode="after")
+    def validate_prod_security(self) -> Settings:
+        if self.APP_ENV == "prod":
+            if not self.DASHBOARD_READ_ONLY and not self.DASHBOARD_API_KEY:
+                raise ValueError(
+                    "In prod, DASHBOARD_API_KEY must be configured when DASHBOARD_READ_ONLY=False."
+                )
+        return self
 
 
 settings = Settings()

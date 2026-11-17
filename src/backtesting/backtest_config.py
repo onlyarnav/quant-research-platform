@@ -159,6 +159,15 @@ class BacktestConfig:
             ValueError: If any parameter is out of its allowable financial range.
         """
         res = self.resolved()
+        assert res.initial_capital is not None
+        assert res.transaction_cost is not None
+        assert res.slippage is not None
+        assert res.max_position_size is not None
+        assert res.cash_reserve is not None
+        assert res.rebalance_tolerance is not None
+        assert res.execution_lag is not None
+        assert res.lookback_window is not None
+        assert res.risk_free_rate is not None
 
         if res.initial_capital <= 0:
             raise ValueError(

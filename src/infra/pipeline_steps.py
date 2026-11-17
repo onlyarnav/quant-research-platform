@@ -54,15 +54,18 @@ class IngestionStep:
         from src.data_pipeline.ingestion import IngestionPipeline
         from src.data_pipeline.universe import get_nse_equity_universe
 
-        universe = get_nse_equity_universe(symbols=context.symbols)
+        universe = get_nse_equity_universe()
+        if context.symbols:
+            syms = set(context.symbols)
+            universe = [a for a in universe if a.symbol in syms]
         if not universe:
             raise ValueError(f"No assets discovered for symbols: {context.symbols}")
 
         pipeline = IngestionPipeline()
         report = pipeline.run(universe)
         return {
-            "succeeded": len(report.succeeded),
-            "failed": len(report.failed),
+            "succeeded": report.succeeded,
+            "failed": report.failed,
             "total": report.total,
         }
 
@@ -113,7 +116,7 @@ class PredictionStep:
         ]
 
         for m_name in target_models:
-            if not store.exists(name=m_name):
+            if not store.exists(model_name=m_name):
                 raise RuntimeError(
                     f"No trained model found for '{m_name}' in model registry. Do not train implicitly."
                 )

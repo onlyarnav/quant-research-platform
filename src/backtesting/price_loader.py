@@ -174,3 +174,5 @@ class PriceLoader:
 
         combined = combined.sort_values(["symbol", "date"]).reset_index(drop=True)
         return combined
+
+    load_prices = load

@@ -1,0 +1,12 @@
+[server]
+headless = true
+enableXsrfProtection = true
+enableCORS = true
+port = 8501
+address = "0.0.0.0"
+
+[browser]
+gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"

@@ -30,8 +30,8 @@ MAX_PAGE_SIZE = 1000
 class DashboardConfig:
     """Runtime configuration for Dashboard API and Streamlit client."""
 
-    api_url: str = settings.DASHBOARD_API_URL
-    api_key: str = settings.DASHBOARD_API_KEY
+    api_url: str | None = settings.DASHBOARD_API_URL
+    api_key: str | None = settings.DASHBOARD_API_KEY
     cache_ttl_seconds: int = settings.DASHBOARD_CACHE_TTL_SECONDS
     default_page_size: int = DEFAULT_PAGE_SIZE
     max_page_size: int = MAX_PAGE_SIZE

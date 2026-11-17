@@ -97,16 +97,33 @@ def start_background_scheduler(
     job: Callable[[], Any] | None = None,
 ) -> None:
     """
-    Build and start the blocking cron scheduler loop.
+    Build and start the blocking cron scheduler loop with graceful SIGTERM/SIGINT.
     """
+    import signal
+    import sys
+
     scheduler = build_scheduler(run_time=run_time, timezone=timezone, job=job)
     logger.info(
         "Starting background scheduler configured for %s (%s)",
         run_time or settings.PIPELINE_RUN_TIME,
         timezone or settings.PIPELINE_TIMEZONE,
     )
+
+    def _handle_exit_signal(signum: int, frame: Any) -> None:
+        logger.info("Signal %s received. Shutting down scheduler gracefully.", signum)
+        if scheduler.running:
+            scheduler.shutdown(wait=False)
+        sys.exit(0)
+
+    try:
+        signal.signal(signal.SIGTERM, _handle_exit_signal)
+        signal.signal(signal.SIGINT, _handle_exit_signal)
+    except (ValueError, AttributeError):
+        pass
+
     try:
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):
         logger.info("Scheduler received exit signal. Shutting down gracefully.")
-        scheduler.shutdown()
+        if scheduler.running:
+            scheduler.shutdown()

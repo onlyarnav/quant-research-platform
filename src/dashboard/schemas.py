@@ -118,7 +118,7 @@ class PipelineRunInfo(BaseModel):
     finished_at: str
     all_succeeded: bool
     total_duration_seconds: float
-    steps: list[dict[str, Any]] = Field(default_factory=dict)
+    steps: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class BacktestRequest(BaseModel):

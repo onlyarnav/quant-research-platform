@@ -24,6 +24,7 @@ if "config" in sys.modules and not hasattr(sys.modules["config"], "__path__"):
 
 import streamlit as st  # noqa: E402
 
+from config.settings import settings  # noqa: E402
 from src.dashboard.client import DashboardClient, get_client  # noqa: E402
 from src.dashboard.views import (  # noqa: E402
     allocation,
@@ -37,7 +38,7 @@ from src.dashboard.views import (  # noqa: E402
     trades,
 )
 
-PAGE_DISPATCH = {
+BASE_PAGES = {
     "Overview": overview.render,
     "Performance": performance.render,
     "Trades": trades.render,
@@ -46,8 +47,30 @@ PAGE_DISPATCH = {
     "Signals": signals.render,
     "Experiments": experiments.render,
     "Pipeline": pipeline.render,
-    "Run Backtest": run_backtest.render,
 }
+
+
+def _check_auth() -> bool:
+    """Validate password gate if DASHBOARD_PASSWORD is set."""
+    if not settings.DASHBOARD_PASSWORD:
+        return True
+
+    if "authenticated" not in st.session_state:
+        st.session_state["authenticated"] = False
+
+    if st.session_state["authenticated"]:
+        return True
+
+    st.title("🔒 Quant Platform Authentication")
+    st.info("A password is required to access the research dashboard.")
+    entered = st.text_input("Enter Dashboard Password", type="password")
+    if st.button("Unlock Dashboard"):
+        if entered == settings.DASHBOARD_PASSWORD:
+            st.session_state["authenticated"] = True
+            st.rerun()
+        else:
+            st.error("Invalid password. Access denied.")
+    return False
 
 
 def main(client: DashboardClient | None = None) -> None:
@@ -58,11 +81,22 @@ def main(client: DashboardClient | None = None) -> None:
         initial_sidebar_state="expanded",
     )
 
+    if not _check_auth():
+        return
+
     cli = client or get_client()
+
+    # Configure available pages based on read-only setting
+    pages = dict(BASE_PAGES)
+    if not settings.DASHBOARD_READ_ONLY:
+        pages["Run Backtest"] = run_backtest.render
 
     # Sidebar Header & Navigation
     st.sidebar.title("Quant Research")
-    page_name = st.sidebar.radio("Navigation", list(PAGE_DISPATCH.keys()), index=0)
+    if settings.DASHBOARD_READ_ONLY:
+        st.sidebar.warning("🔒 Read-Only Mode")
+
+    page_name = st.sidebar.radio("Navigation", list(pages.keys()), index=0)
 
     st.sidebar.divider()
 
@@ -103,8 +137,15 @@ def main(client: DashboardClient | None = None) -> None:
     except Exception:
         st.sidebar.caption("System Health: ⚪ UNKNOWN")
 
+    # Persistent Academic & Legal Disclaimer Banner
+    st.caption(
+        "⚠️ **Academic Research Platform:** Not registered with SEBI. "
+        "No financial advice. Simulated backtests have inherent limitations. "
+        "[View Disclaimer](https://github.com)"
+    )
+
     # Render Active Page
-    render_fn = PAGE_DISPATCH.get(page_name, overview.render)
+    render_fn = pages.get(page_name, overview.render)
     render_fn(cli, run_id=run_id)
 
 
