@@ -5,7 +5,7 @@ Streamlit UI layout, KPI, and formatting helper components.
 from __future__ import annotations
 
 import math
-from typing import Any, Callable
+from typing import Any, Callable, Sequence
 
 import pandas as pd
 import streamlit as st
@@ -92,7 +92,9 @@ def safe_call(
         return None, exc
 
 
-def kpi_row(metrics: dict[str, Any], specs: list[tuple[str, str, str | None]]) -> None:
+def kpi_row(
+    metrics: dict[str, Any], specs: Sequence[tuple[str, str, str | None]]
+) -> None:
     """
     Render a horizontal grid row of st.metric cards.
 

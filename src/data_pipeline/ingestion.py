@@ -10,7 +10,7 @@ Responsibilities:
 
 Usage:
     from src.data_pipeline.ingestion import IngestionPipeline, AssetConfig
-    
+
     pipeline = IngestionPipeline()
     pipeline.run([
         AssetConfig(symbol="RELIANCE.NS", asset_class="equity", exchange="NSE", currency="INR"),
@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date
 
 import pandas as pd
 
@@ -171,9 +171,7 @@ class IngestionPipeline:
         )
 
         if report.failed > 0:
-            failed_symbols = [
-                r.symbol for r in report.results if not r.success
-            ]
+            failed_symbols = [r.symbol for r in report.results if not r.success]
             logger.warning("Failed symbols: %s", failed_symbols)
 
         return report
@@ -203,7 +201,9 @@ class IngestionPipeline:
                     "symbol=%s is already up to date. Skipping.",
                     asset.symbol,
                 )
-                return IngestionResult(symbol=asset.symbol, success=True, rows_written=0)
+                return IngestionResult(
+                    symbol=asset.symbol, success=True, rows_written=0
+                )
 
             request = YFinanceRequest(
                 symbol=asset.symbol,
@@ -304,8 +304,8 @@ class IngestionPipeline:
             return None, None
 
         incremental_start = (
-            pd.Timestamp(last_date) + pd.Timedelta(days=1)
-        ).date().isoformat()
+            (pd.Timestamp(last_date) + pd.Timedelta(days=1)).date().isoformat()
+        )
 
         logger.info(
             "Incremental fetch for symbol=%s from=%s to=%s",

@@ -1,9 +1,9 @@
 from .asset import Asset
-from .price import Price
 from .feature import Feature
+from .portfolio_metric import PortfolioMetric
+from .price import Price
 from .signal import Signal
 from .trade import Trade
-from .portfolio_metric import PortfolioMetric
 
 __all__ = [
     "Asset",

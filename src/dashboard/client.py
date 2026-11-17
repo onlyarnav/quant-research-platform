@@ -40,9 +40,13 @@ class DashboardClient(Protocol):
     def get_monthly_returns(self, run_id: str) -> pd.DataFrame: ...
 
     def get_trades(
-        self, run_id: str, symbol: str | None = None,
-        start: str | None = None, end: str | None = None,
-        limit: int = 100, offset: int = 0,
+        self,
+        run_id: str,
+        symbol: str | None = None,
+        start: str | None = None,
+        end: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> tuple[list[dict[str, Any]], int]: ...
 
     def get_trade_distribution(self, run_id: str) -> pd.DataFrame: ...
@@ -54,12 +58,16 @@ class DashboardClient(Protocol):
     def get_benchmark(self, run_id: str) -> dict[str, Any] | None: ...
 
     def latest_signals(
-        self, asset_class: str = "equity", timeframe: str = "daily",
+        self,
+        asset_class: str = "equity",
+        timeframe: str = "daily",
         as_of: str | None = None,
     ) -> pd.DataFrame: ...
 
     def signal_counts(
-        self, asset_class: str = "equity", timeframe: str = "daily",
+        self,
+        asset_class: str = "equity",
+        timeframe: str = "daily",
         as_of: str | None = None,
     ) -> tuple[str | None, dict[str, int]]: ...
     def list_models(self) -> list[dict[str, Any]]: ...
@@ -119,7 +127,9 @@ class LocalClient:
         return self.service.get_benchmark(run_id)
 
     def latest_signals(
-        self, asset_class: str = "equity", timeframe: str = "daily",
+        self,
+        asset_class: str = "equity",
+        timeframe: str = "daily",
         as_of: str | None = None,
     ) -> pd.DataFrame:
         return self.service.latest_signals(
@@ -127,7 +137,9 @@ class LocalClient:
         )
 
     def signal_counts(
-        self, asset_class: str = "equity", timeframe: str = "daily",
+        self,
+        asset_class: str = "equity",
+        timeframe: str = "daily",
         as_of: str | None = None,
     ) -> tuple[str | None, dict[str, int]]:
         return self.service.signal_counts(
@@ -217,9 +229,13 @@ class ApiClient:
         return pd.DataFrame(data.get("rows", []))
 
     def get_trades(
-        self, run_id: str, symbol: str | None = None,
-        start: str | None = None, end: str | None = None,
-        limit: int = 100, offset: int = 0,
+        self,
+        run_id: str,
+        symbol: str | None = None,
+        start: str | None = None,
+        end: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> tuple[list[dict[str, Any]], int]:
         raw = {
             "symbol": symbol,
@@ -245,7 +261,9 @@ class ApiClient:
         return self._request("GET", f"/runs/{run_id}/benchmark")
 
     def latest_signals(
-        self, asset_class: str = "equity", timeframe: str = "daily",
+        self,
+        asset_class: str = "equity",
+        timeframe: str = "daily",
         as_of: str | None = None,
     ) -> pd.DataFrame:
         params = {"asset_class": asset_class, "timeframe": timeframe, "as_of": as_of}
@@ -254,7 +272,9 @@ class ApiClient:
         return pd.DataFrame(data.get("rows", []))
 
     def signal_counts(
-        self, asset_class: str = "equity", timeframe: str = "daily",
+        self,
+        asset_class: str = "equity",
+        timeframe: str = "daily",
         as_of: str | None = None,
     ) -> tuple[str | None, dict[str, int]]:
         params = {"asset_class": asset_class, "timeframe": timeframe, "as_of": as_of}

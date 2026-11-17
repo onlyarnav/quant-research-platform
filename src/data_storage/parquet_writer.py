@@ -191,9 +191,7 @@ class ParquetWriter:
         file_path = self.build_file_path(layer, asset_class, symbol, timeframe)
 
         if not file_path.exists():
-            raise FileNotFoundError(
-                f"Parquet file not found: {file_path}"
-            )
+            raise FileNotFoundError(f"Parquet file not found: {file_path}")
 
         try:
             table = pq.read_table(file_path)

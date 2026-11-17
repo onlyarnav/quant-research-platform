@@ -1,5 +1,4 @@
 from src.database.base import Base
-from src.database.sessions import SessionLocal, engine, get_session, init_db
 from src.database.models import (
     Asset,
     Feature,
@@ -8,6 +7,7 @@ from src.database.models import (
     Signal,
     Trade,
 )
+from src.database.sessions import SessionLocal, engine, get_session, init_db
 
 __all__ = [
     "Base",

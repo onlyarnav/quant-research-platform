@@ -132,9 +132,7 @@ class DataCleaner:
         removed = before - len(df)
 
         if removed > 0:
-            logger.warning(
-                "Removed %s rows with null OHLC values.", removed
-            )
+            logger.warning("Removed %s rows with null OHLC values.", removed)
 
         return df
 
@@ -146,17 +144,14 @@ class DataCleaner:
         are typically due to exchange holidays or data gaps, not real zeros.
         """
         optional_columns = ["adj_close", "volume"]
-        existing_optional = [
-            col for col in optional_columns if col in df.columns
-        ]
+        existing_optional = [col for col in optional_columns if col in df.columns]
 
         if not existing_optional:
             return df
 
-        df[existing_optional] = (
-            df.groupby("symbol", group_keys=False)[existing_optional]
-            .apply(lambda group: group.ffill())
-        )
+        df[existing_optional] = df.groupby("symbol", group_keys=False)[
+            existing_optional
+        ].apply(lambda group: group.ffill())
 
         return df
 
@@ -174,14 +169,10 @@ class DataCleaner:
         """
         price_column = "adj_close" if "adj_close" in df.columns else "close"
 
-        df["returns"] = (
-            df.groupby("symbol")[price_column]
-            .pct_change()
-        )
+        df["returns"] = df.groupby("symbol")[price_column].pct_change()
 
-        df["log_returns"] = (
-            df.groupby("symbol")[price_column]
-            .transform(lambda x: np.log(x / x.shift(1)))
+        df["log_returns"] = df.groupby("symbol")[price_column].transform(
+            lambda x: np.log(x / x.shift(1))
         )
 
         before = len(df)

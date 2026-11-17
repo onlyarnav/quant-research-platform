@@ -18,8 +18,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from src.data_pipeline.cleaning import DataCleaner, DataCleaningError, PROCESSED_COLUMNS
-
+from src.data_pipeline.cleaning import PROCESSED_COLUMNS, DataCleaner, DataCleaningError
 
 # ── Fixtures ──────────────────────────────────────────────────
 

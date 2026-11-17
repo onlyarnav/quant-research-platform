@@ -14,11 +14,12 @@ Tests cover:
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
+from src.data_pipeline.cleaning import DataCleaningError
 from src.data_pipeline.processing import (
     ProcessingConfig,
     ProcessingPipeline,
@@ -27,8 +28,6 @@ from src.data_pipeline.processing import (
     ProcessingResult,
 )
 from src.data_pipeline.validation import ValidationResult
-from src.data_pipeline.cleaning import DataCleaningError
-
 
 # ── Fixtures ──────────────────────────────────────────────────
 
@@ -302,6 +301,7 @@ class TestProcessingPipelineWritesProcessedLayer:
 
         call_kwargs = mock_writer.write.call_args.kwargs
         from src.data_storage.parquet_writer import DataLayer
+
         assert call_kwargs["layer"] == DataLayer.PROCESSED
 
     def test_write_called_with_overwrite_mode(self) -> None:
@@ -329,18 +329,14 @@ class TestProcessingPipelineWritesProcessedLayer:
 class TestProcessingReport:
     def test_report_add_success(self) -> None:
         report = ProcessingReport()
-        report.add(
-            ProcessingResult(symbol="A.NS", success=True, rows_written=100)
-        )
+        report.add(ProcessingResult(symbol="A.NS", success=True, rows_written=100))
         assert report.total == 1
         assert report.succeeded == 1
         assert report.failed == 0
 
     def test_report_add_failure(self) -> None:
         report = ProcessingReport()
-        report.add(
-            ProcessingResult(symbol="A.NS", success=False, error="failed")
-        )
+        report.add(ProcessingResult(symbol="A.NS", success=False, error="failed"))
         assert report.total == 1
         assert report.succeeded == 0
         assert report.failed == 1

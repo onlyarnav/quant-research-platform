@@ -21,9 +21,7 @@ import pytest
 from src.data_pipeline.validation import (
     DataValidationError,
     DataValidator,
-    ValidationResult,
 )
-
 
 # ── Fixtures ──────────────────────────────────────────────────
 

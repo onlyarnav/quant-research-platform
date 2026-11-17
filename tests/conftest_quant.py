@@ -164,57 +164,65 @@ def populated_store(tmp_path) -> BacktestStore:
         pnl=47.0,
         return_pct=0.047,
     )
-    trades_df = pd.DataFrame([
-        {
-            "trade_id": 1,
-            "symbol": "SYM_00",
-            "entry_date": pd.Timestamp("2024-01-01"),
-            "exit_date": pd.Timestamp("2024-01-04"),
-            "entry_price": 100.0,
-            "exit_price": 105.0,
-            "position_size": 10.0,
-            "fees": 2.0,
-            "slippage_cost": 1.0,
-            "pnl": 47.0,
-            "return_pct": 0.047,
-        }
-    ])
-    details_df = pd.DataFrame([
-        {
-            "trade_id": 1,
-            "side": "long",
-            "exit_reason": "signal",
-            "gross_pnl": 50.0,
-            "holding_days": 3,
-        }
-    ])
-    daily_df = pd.DataFrame([
-        {
-            "date": pd.Timestamp("2024-01-01"),
-            "gross_exposure": 0.8,
-            "net_exposure": 0.8,
-            "long_exposure": 0.8,
-            "short_exposure": 0.0,
-            "n_positions": 1,
-            "turnover": 0.8,
-            "realized_pnl_cum": 47.0,
-            "unrealized_pnl": 0.0,
-            "fees_cum": 2.0,
-            "slippage_cum": 1.0,
-        }
-    ])
-    pos_df = pd.DataFrame([
-        {
-            "date": pd.Timestamp("2024-01-01"),
-            "symbol": "SYM_00",
-            "side": 1,
-            "quantity": 10.0,
-            "price": 100.0,
-            "market_value": 1000.0,
-            "weight": 0.8,
-            "unrealized_pnl": 0.0,
-        }
-    ])
+    trades_df = pd.DataFrame(
+        [
+            {
+                "trade_id": 1,
+                "symbol": "SYM_00",
+                "entry_date": pd.Timestamp("2024-01-01"),
+                "exit_date": pd.Timestamp("2024-01-04"),
+                "entry_price": 100.0,
+                "exit_price": 105.0,
+                "position_size": 10.0,
+                "fees": 2.0,
+                "slippage_cost": 1.0,
+                "pnl": 47.0,
+                "return_pct": 0.047,
+            }
+        ]
+    )
+    details_df = pd.DataFrame(
+        [
+            {
+                "trade_id": 1,
+                "side": "long",
+                "exit_reason": "signal",
+                "gross_pnl": 50.0,
+                "holding_days": 3,
+            }
+        ]
+    )
+    daily_df = pd.DataFrame(
+        [
+            {
+                "date": pd.Timestamp("2024-01-01"),
+                "gross_exposure": 0.8,
+                "net_exposure": 0.8,
+                "long_exposure": 0.8,
+                "short_exposure": 0.0,
+                "n_positions": 1,
+                "turnover": 0.8,
+                "realized_pnl_cum": 47.0,
+                "unrealized_pnl": 0.0,
+                "fees_cum": 2.0,
+                "slippage_cum": 1.0,
+            }
+        ]
+    )
+    pos_df = pd.DataFrame(
+        [
+            {
+                "date": pd.Timestamp("2024-01-01"),
+                "symbol": "SYM_00",
+                "side": 1,
+                "quantity": 10.0,
+                "price": 100.0,
+                "market_value": 1000.0,
+                "weight": 0.8,
+                "unrealized_pnl": 0.0,
+            }
+        ]
+    )
 
     out = SimulationOutput(
         trades=[t],

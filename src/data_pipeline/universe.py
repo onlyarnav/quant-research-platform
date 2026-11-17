@@ -34,13 +34,13 @@ _NIFTY500_CSV_PATH = _PROJECT_ROOT / "data" / "universe" / "nifty500.csv"
 
 # ── NSE Index Universe (hardcoded fixed list) ─────────────────
 _NSE_INDEX_SYMBOLS: list[dict[str, str]] = [
-    {"symbol": "^NSEI", "currency": "INR"},       # NIFTY 50
-    {"symbol": "^NSEBANK", "currency": "INR"},    # NIFTY BANK
-    {"symbol": "^CNXAUTO", "currency": "INR"},    # NIFTY AUTO
-    {"symbol": "^CNXIT", "currency": "INR"},      # NIFTY IT
+    {"symbol": "^NSEI", "currency": "INR"},  # NIFTY 50
+    {"symbol": "^NSEBANK", "currency": "INR"},  # NIFTY BANK
+    {"symbol": "^CNXAUTO", "currency": "INR"},  # NIFTY AUTO
+    {"symbol": "^CNXIT", "currency": "INR"},  # NIFTY IT
     {"symbol": "^CNXPHARMA", "currency": "INR"},  # NIFTY PHARMA
-    {"symbol": "^CNXFMCG", "currency": "INR"},    # NIFTY FMCG
-    {"symbol": "^CNXMETAL", "currency": "INR"},   # NIFTY METAL
+    {"symbol": "^CNXFMCG", "currency": "INR"},  # NIFTY FMCG
+    {"symbol": "^CNXMETAL", "currency": "INR"},  # NIFTY METAL
     {"symbol": "^CNXREALTY", "currency": "INR"},  # NIFTY REALTY
 ]
 

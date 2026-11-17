@@ -25,7 +25,6 @@ import pytest
 
 from src.data_storage.parquet_writer import DataLayer, ParquetWriter, ParquetWriterError
 
-
 # ── Fixtures ──────────────────────────────────────────────────
 
 
@@ -34,18 +33,10 @@ def writer(tmp_path: Path, monkeypatch) -> ParquetWriter:
     """Return a ParquetWriter with all data layer paths pointed to tmp_path."""
     import src.data_storage.parquet_writer as pw
 
-    monkeypatch.setitem(
-        pw.LAYER_PATH_MAP, DataLayer.RAW, tmp_path / "raw"
-    )
-    monkeypatch.setitem(
-        pw.LAYER_PATH_MAP, DataLayer.PROCESSED, tmp_path / "processed"
-    )
-    monkeypatch.setitem(
-        pw.LAYER_PATH_MAP, DataLayer.FEATURES, tmp_path / "features"
-    )
-    monkeypatch.setitem(
-        pw.LAYER_PATH_MAP, DataLayer.SIGNALS, tmp_path / "signals"
-    )
+    monkeypatch.setitem(pw.LAYER_PATH_MAP, DataLayer.RAW, tmp_path / "raw")
+    monkeypatch.setitem(pw.LAYER_PATH_MAP, DataLayer.PROCESSED, tmp_path / "processed")
+    monkeypatch.setitem(pw.LAYER_PATH_MAP, DataLayer.FEATURES, tmp_path / "features")
+    monkeypatch.setitem(pw.LAYER_PATH_MAP, DataLayer.SIGNALS, tmp_path / "signals")
     monkeypatch.setitem(
         pw.LAYER_PATH_MAP, DataLayer.PREDICTIONS, tmp_path / "predictions"
     )
@@ -77,16 +68,16 @@ def make_df(dates: list[str], symbol: str = "RELIANCE.NS") -> pd.DataFrame:
 
 
 class TestBuildFilePath:
-    def test_returns_correct_filename(self, writer: ParquetWriter, tmp_path: Path) -> None:
-        path = writer.build_file_path(
-            DataLayer.RAW, "equity", "RELIANCE", "daily"
-        )
+    def test_returns_correct_filename(
+        self, writer: ParquetWriter, tmp_path: Path
+    ) -> None:
+        path = writer.build_file_path(DataLayer.RAW, "equity", "RELIANCE", "daily")
         assert path.name == "equity_RELIANCE_daily.parquet"
 
-    def test_returns_correct_directory(self, writer: ParquetWriter, tmp_path: Path) -> None:
-        path = writer.build_file_path(
-            DataLayer.RAW, "equity", "RELIANCE", "daily"
-        )
+    def test_returns_correct_directory(
+        self, writer: ParquetWriter, tmp_path: Path
+    ) -> None:
+        path = writer.build_file_path(DataLayer.RAW, "equity", "RELIANCE", "daily")
         assert path.parent.name == "equity"
 
     def test_different_layers_return_different_paths(
@@ -291,9 +282,7 @@ class TestParquetWriterRead:
 
 
 class TestParquetWriterExists:
-    def test_exists_returns_true_for_written_file(
-        self, writer: ParquetWriter
-    ) -> None:
+    def test_exists_returns_true_for_written_file(self, writer: ParquetWriter) -> None:
         df = make_df(["2024-01-01"])
         writer.write(
             df,
@@ -309,9 +298,7 @@ class TestParquetWriterExists:
             timeframe="daily",
         )
 
-    def test_exists_returns_false_for_missing_file(
-        self, writer: ParquetWriter
-    ) -> None:
+    def test_exists_returns_false_for_missing_file(self, writer: ParquetWriter) -> None:
         assert not writer.exists(
             layer=DataLayer.RAW,
             asset_class="equity",

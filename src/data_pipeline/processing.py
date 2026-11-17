@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 
 from config.constants import TIMEFRAME_DAILY
 from src.data_pipeline.cleaning import DataCleaner, DataCleaningError
-from src.data_pipeline.validation import DataValidator, DataValidationError
+from src.data_pipeline.validation import DataValidationError, DataValidator
 from src.data_storage.parquet_writer import DataLayer, ParquetWriter, ParquetWriterError
 
 logger = logging.getLogger(__name__)
@@ -143,9 +143,7 @@ class ProcessingPipeline:
             ProcessingPipelineError: If configs list is empty.
         """
         if not configs:
-            raise ProcessingPipelineError(
-                "Config list is empty. Nothing to process."
-            )
+            raise ProcessingPipelineError("Config list is empty. Nothing to process.")
 
         logger.info(
             "Starting processing pipeline. assets=%s",
@@ -166,9 +164,7 @@ class ProcessingPipeline:
         )
 
         if report.failed > 0:
-            failed_symbols = [
-                r.symbol for r in report.results if not r.success
-            ]
+            failed_symbols = [r.symbol for r in report.results if not r.success]
             logger.warning("Failed symbols: %s", failed_symbols)
 
         return report
@@ -219,8 +215,7 @@ class ProcessingPipeline:
             if not validation_result.is_valid:
                 error_summary = " | ".join(validation_result.errors)
                 raise DataValidationError(
-                    f"Validation failed for symbol={config.symbol}: "
-                    f"{error_summary}"
+                    f"Validation failed for symbol={config.symbol}: " f"{error_summary}"
                 )
 
             if validation_result.warnings:

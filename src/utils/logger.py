@@ -12,7 +12,6 @@ import logging
 import sys
 from pathlib import Path
 
-
 _LOG_FORMAT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
 _DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 _initialized = False
@@ -21,6 +20,7 @@ _initialized = False
 def _get_log_level() -> int:
     """Read log level from environment, default INFO."""
     import os
+
     level = os.getenv("LOG_LEVEL", "INFO").upper()
     return getattr(logging, level, logging.INFO)
 

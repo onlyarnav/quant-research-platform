@@ -141,9 +141,9 @@ class PipelineOrchestrator:
 
     def run_retraining(
         self,
-        model_name: str,
-        asset_class: str = "equity",
-        timeframe: str = "daily",
+        model_type: str = "ridge",
+        model_name: str | None = None,
+        horizon: int | None = None,
         force: bool = False,
     ) -> dict[str, Any]:
         """
@@ -151,18 +151,39 @@ class PipelineOrchestrator:
 
         Re-raises exceptions on failure.
         """
+        from src.models.dataset_builder import DatasetBuilder
+        from src.models.drift_detector import DriftDetector
+        from src.models.model_evaluator import ModelEvaluator
+        from src.models.model_store import ModelStore
         from src.models.retraining_pipeline import RetrainingPipeline
+        from src.models.training_pipeline import TrainingPipeline
 
-        pipeline = RetrainingPipeline()
+        dataset_builder = DatasetBuilder()
+        model_store = ModelStore()
+        evaluator = ModelEvaluator()
+        training_pipeline = TrainingPipeline(
+            dataset_builder=dataset_builder,
+            evaluator=evaluator,
+            model_store=model_store,
+        )
+        drift_detector = DriftDetector()
+
+        pipeline = RetrainingPipeline(
+            training_pipeline=training_pipeline,
+            model_store=model_store,
+            drift_detector=drift_detector,
+            dataset_builder=dataset_builder,
+        )
         result = pipeline.run(
+            model_type=model_type,
             model_name=model_name,
-            asset_class=asset_class,
-            timeframe=timeframe,
+            horizon=horizon,
             force=force,
         )
         return {
-            "retrained": result.retrained,
-            "metrics": result.metrics,
+            "retrained": result.trained,
+            "promoted": result.promoted,
+            "metrics": result.candidate_metrics,
             "decision": (
                 result.decision.name
                 if hasattr(result.decision, "name")

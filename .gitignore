@@ -1,5 +1,6 @@
 # Environment
-.env
+.env*
+!.env*.example
 venv/
 .venv/
 __pycache__/
@@ -10,6 +11,23 @@ __pycache__/
 dist/
 build/
 .Python
+
+# Logs
+logs/
+*.log
+
+# Databases & local stores
+*.db
+*.sqlite
+*.sqlite3
+
+# Terraform state
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+.terraform/
+.terraform.lock.hcl
 
 # Data lake — too large for git
 data/raw/

@@ -15,11 +15,12 @@ Tests cover:
 from __future__ import annotations
 
 from datetime import date
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pytest
 
+from src.data_pipeline.connectors.yfinance_connector import YFinanceConnectorError
 from src.data_pipeline.ingestion import (
     AssetConfig,
     IngestionPipeline,
@@ -27,9 +28,6 @@ from src.data_pipeline.ingestion import (
     IngestionReport,
     IngestionResult,
 )
-from src.data_pipeline.connectors.yfinance_connector import YFinanceConnectorError
-from src.data_storage.parquet_writer import DataLayer
-
 
 # ── Fixtures ──────────────────────────────────────────────────
 
@@ -144,9 +142,7 @@ class TestIngestionPipelineFailures:
         mock_connector = MagicMock()
         mock_writer = MagicMock()
 
-        mock_connector.fetch_history.side_effect = YFinanceConnectorError(
-            "API timeout"
-        )
+        mock_connector.fetch_history.side_effect = YFinanceConnectorError("API timeout")
         mock_writer.exists.return_value = False
 
         pipeline = IngestionPipeline(
@@ -285,9 +281,7 @@ class TestIngestionReport:
 
     def test_report_add_failure(self) -> None:
         report = IngestionReport()
-        report.add(
-            IngestionResult(symbol="A.NS", success=False, error="timeout")
-        )
+        report.add(IngestionResult(symbol="A.NS", success=False, error="timeout"))
         assert report.total == 1
         assert report.succeeded == 0
         assert report.failed == 1

@@ -169,9 +169,7 @@ class DataValidator:
                 continue
             null_count = df[col].isna().sum()
             if null_count > 0:
-                result.add_error(
-                    f"Column '{col}' has {null_count} null value(s)."
-                )
+                result.add_error(f"Column '{col}' has {null_count} null value(s).")
                 result.rows_invalid += int(null_count)
 
     def _check_duplicate_index(
@@ -199,37 +197,27 @@ class DataValidator:
 
         high_lt_low = (df["high"] < df["low"]).sum()
         if high_lt_low > 0:
-            result.add_error(
-                f"Found {high_lt_low} row(s) where high < low."
-            )
+            result.add_error(f"Found {high_lt_low} row(s) where high < low.")
             result.rows_invalid += int(high_lt_low)
 
         high_lt_open = (df["high"] < df["open"]).sum()
         if high_lt_open > 0:
-            result.add_error(
-                f"Found {high_lt_open} row(s) where high < open."
-            )
+            result.add_error(f"Found {high_lt_open} row(s) where high < open.")
             result.rows_invalid += int(high_lt_open)
 
         high_lt_close = (df["high"] < df["close"]).sum()
         if high_lt_close > 0:
-            result.add_error(
-                f"Found {high_lt_close} row(s) where high < close."
-            )
+            result.add_error(f"Found {high_lt_close} row(s) where high < close.")
             result.rows_invalid += int(high_lt_close)
 
         low_gt_open = (df["low"] > df["open"]).sum()
         if low_gt_open > 0:
-            result.add_error(
-                f"Found {low_gt_open} row(s) where low > open."
-            )
+            result.add_error(f"Found {low_gt_open} row(s) where low > open.")
             result.rows_invalid += int(low_gt_open)
 
         low_gt_close = (df["low"] > df["close"]).sum()
         if low_gt_close > 0:
-            result.add_error(
-                f"Found {low_gt_close} row(s) where low > close."
-            )
+            result.add_error(f"Found {low_gt_close} row(s) where low > close.")
             result.rows_invalid += int(low_gt_close)
 
     def _check_negative_volume(
@@ -243,9 +231,7 @@ class DataValidator:
             pd.to_numeric(df["volume"], errors="coerce").fillna(0) < 0
         ).sum()
         if negative_count > 0:
-            result.add_error(
-                f"Found {negative_count} row(s) with negative volume."
-            )
+            result.add_error(f"Found {negative_count} row(s) with negative volume.")
             result.rows_invalid += int(negative_count)
 
     def _check_chronological_order(

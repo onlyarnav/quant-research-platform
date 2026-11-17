@@ -19,7 +19,6 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from config.settings import settings
 
-
 logger = logging.getLogger(__name__)
 
 

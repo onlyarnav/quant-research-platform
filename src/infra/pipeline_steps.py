@@ -63,7 +63,7 @@ class IngestionStep:
         return {
             "succeeded": len(report.succeeded),
             "failed": len(report.failed),
-            "total": report.total_attempted,
+            "total": report.total,
         }
 
 
@@ -90,7 +90,7 @@ class FeatureStep:
         return {
             "succeeded": report.succeeded,
             "failed": report.failed,
-            "total_files": report.total_files,
+            "total_files": report.total,
         }
 
 
@@ -113,8 +113,7 @@ class PredictionStep:
         ]
 
         for m_name in target_models:
-            avail = store.list_models(name=m_name)
-            if not avail:
+            if not store.exists(name=m_name):
                 raise RuntimeError(
                     f"No trained model found for '{m_name}' in model registry. Do not train implicitly."
                 )
@@ -146,9 +145,12 @@ class SignalStep:
         from src.signals.rank_signal import RankSignalGenerator
         from src.signals.signal_pipeline import SignalPipeline
         from src.signals.threshold_signal import ThresholdSignalGenerator
-        from src.signals.topn_signal import TopNSignalGenerator
+        from src.signals.topn_signal import (
+            TopNLongShortSignalGenerator as TopNSignalGenerator,
+        )
 
         gen_name = context.extras.get("signal_generator", "threshold")
+        generator: Any
         if gen_name == "rank":
             generator = RankSignalGenerator()
         elif gen_name == "topn":

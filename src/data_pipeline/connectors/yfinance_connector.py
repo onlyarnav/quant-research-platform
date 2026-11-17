@@ -33,7 +33,6 @@ from config.constants import (
     TIMEFRAME_DAILY,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -286,7 +285,7 @@ class YFinanceConnector:
             f"Failed to fetch yfinance data for symbol={symbol} "
             f"after {self.max_retries} attempts"
         ) from last_error
-    
+
     def _apply_rate_limit(self) -> None:
         """
         Enforce minimum delay between yfinance requests.
