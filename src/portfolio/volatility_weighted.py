@@ -37,7 +37,9 @@ class VolatilityWeightedAllocator:
                 to compute at least 1 return).
         """
         if lookback_window < 2:
-            raise ValueError(f"lookback_window must be at least 2, got {lookback_window}")
+            raise ValueError(
+                f"lookback_window must be at least 2, got {lookback_window}"
+            )
         self.lookback_window = lookback_window
 
     def allocate(
@@ -94,7 +96,9 @@ class VolatilityWeightedAllocator:
 
         for symbol in buy_symbols:
             symbol_prices = (
-                prices_df[(prices_df["symbol"] == symbol) & (prices_df["date"] <= as_of_date)]
+                prices_df[
+                    (prices_df["symbol"] == symbol) & (prices_df["date"] <= as_of_date)
+                ]
                 .sort_values("date")
                 .tail(self.lookback_window + 1)
             )
@@ -112,13 +116,17 @@ class VolatilityWeightedAllocator:
             vol = returns.std()
 
             if vol == 0 or np.isnan(vol):
-                logger.warning("Symbol=%s has zero or undefined volatility. Excluding.", symbol)
+                logger.warning(
+                    "Symbol=%s has zero or undefined volatility. Excluding.", symbol
+                )
                 continue
 
             volatilities[symbol] = vol
 
         if not volatilities:
-            logger.warning("No symbols with valid volatility; returning empty allocation.")
+            logger.warning(
+                "No symbols with valid volatility; returning empty allocation."
+            )
             return {}
 
         inverse_vols = {symbol: 1.0 / vol for symbol, vol in volatilities.items()}

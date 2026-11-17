@@ -77,11 +77,15 @@ def test_total_return_invalid_initial_value() -> None:
             "daily_return": [0.0, 1.0],
         }
     )
-    with pytest.raises(ValueError, match="Initial portfolio value must be greater than 0"):
+    with pytest.raises(
+        ValueError, match="Initial portfolio value must be greater than 0"
+    ):
         pm.total_return(df)
 
 
-def test_annualized_return_golden_and_single_day(caplog: pytest.LogCaptureFixture) -> None:
+def test_annualized_return_golden_and_single_day(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """
     Test annualized_return golden path and single day fallback.
 
@@ -106,7 +110,9 @@ def test_annualized_return_golden_and_single_day(caplog: pytest.LogCaptureFixtur
     assert "Annualization is not meaningful with a single data point" in caplog.text
 
 
-def test_annualized_volatility_golden_and_degenerate(caplog: pytest.LogCaptureFixture) -> None:
+def test_annualized_volatility_golden_and_degenerate(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """
     Test annualized_volatility golden calculation and degenerate (<2 rows) fallback.
 
@@ -159,7 +165,10 @@ def test_sharpe_ratio_golden_and_zero_vol(caplog: pytest.LogCaptureFixture) -> N
     # Volatility of constant returns is 0.0
     res_zero_vol = pm.sharpe_ratio(flat_df)
     assert math.isnan(res_zero_vol)
-    assert "Cannot compute Sharpe ratio: annualized volatility is zero or undefined" in caplog.text
+    assert (
+        "Cannot compute Sharpe ratio: annualized volatility is zero or undefined"
+        in caplog.text
+    )
 
 
 def test_sortino_ratio_golden_and_no_downside(caplog: pytest.LogCaptureFixture) -> None:
@@ -235,7 +244,9 @@ def test_value_at_risk_and_cvar() -> None:
         }
     )
 
-    with pytest.raises(ValueError, match="confidence_level must be between 0 and 1 exclusive"):
+    with pytest.raises(
+        ValueError, match="confidence_level must be between 0 and 1 exclusive"
+    ):
         pm.value_at_risk(df, confidence_level=1.5)
 
     var_95 = pm.value_at_risk(df, confidence_level=0.95)

@@ -1,0 +1,49 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["scripts/run_api.py", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/quant_research
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./results:/app/results
+    restart: unless-stopped
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["scripts/run_dashboard.py", "--port", "8501"]
+    ports:
+      - "8501:8501"
+    environment:
+      - DASHBOARD_API_URL=http://api:8000
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/quant_research
+    depends_on:
+      - api
+    volumes:
+      - ./data:/app/data
+      - ./results:/app/results
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: ["scripts/run_scheduler.py"]
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/quant_research
+      - PIPELINE_RUN_TIME=08:30
+      - PIPELINE_TIMEZONE=Asia/Kolkata
+    volumes:
+      - ./data:/app/data
+      - ./models:/app/models
+      - ./results:/app/results
+    restart: unless-stopped

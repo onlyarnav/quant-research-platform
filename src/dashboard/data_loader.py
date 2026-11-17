@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 
 import pandas as pd
@@ -80,8 +79,14 @@ def _load_trades_impl(
         "pnl",
         "return_pct",
     ]
-    start_dt = start_date.to_pydatetime() if isinstance(start_date, pd.Timestamp) else start_date
-    end_dt = end_date.to_pydatetime() if isinstance(end_date, pd.Timestamp) else end_date
+    start_dt = (
+        start_date.to_pydatetime()
+        if isinstance(start_date, pd.Timestamp)
+        else start_date
+    )
+    end_dt = (
+        end_date.to_pydatetime() if isinstance(end_date, pd.Timestamp) else end_date
+    )
 
     with get_session() as session:
         repo = TradeRepository(session)
@@ -119,7 +124,11 @@ def _load_portfolio_history_impl(strategy_name: str) -> pd.DataFrame:
     with get_session() as session:
         repo = PortfolioMetricRepository(session)
         records = repo.get_by_strategy(strategy_name)
-        logger.info("Loaded %s portfolio metric records for strategy=%s", len(records), strategy_name)
+        logger.info(
+            "Loaded %s portfolio metric records for strategy=%s",
+            len(records),
+            strategy_name,
+        )
 
         if not records:
             return pd.DataFrame(columns=expected_cols)
@@ -128,7 +137,9 @@ def _load_portfolio_history_impl(strategy_name: str) -> pd.DataFrame:
             records, ["strategy_name", "metric", "value", "calculated_at"]
         )
 
-    pivoted = raw_df.pivot(index="calculated_at", columns="metric", values="value").reset_index()
+    pivoted = raw_df.pivot(
+        index="calculated_at", columns="metric", values="value"
+    ).reset_index()
     pivoted = pivoted.rename(columns={"calculated_at": "date"})
 
     for col in expected_cols:
@@ -159,8 +170,14 @@ def _load_signals_impl(
         DataFrame containing signal records.
     """
     columns = ["symbol", "date", "signal", "predicted_return", "model_version"]
-    start_dt = start_date.to_pydatetime() if isinstance(start_date, pd.Timestamp) else start_date
-    end_dt = end_date.to_pydatetime() if isinstance(end_date, pd.Timestamp) else end_date
+    start_dt = (
+        start_date.to_pydatetime()
+        if isinstance(start_date, pd.Timestamp)
+        else start_date
+    )
+    end_dt = (
+        end_date.to_pydatetime() if isinstance(end_date, pd.Timestamp) else end_date
+    )
 
     with get_session() as session:
         repo = SignalRepository(session)

@@ -17,6 +17,8 @@ data/predictions/
 data/processed/
 data/features/
 data/signals/
+data/backtests/
+data/pipeline_runs/
 data/universe/*.csv
 
 # Keep folder structure

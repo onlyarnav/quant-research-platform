@@ -66,6 +66,8 @@ def render(symbol: str, start_date: pd.Timestamp, end_date: pd.Timestamp) -> Non
         x_col = "entry_date" if "entry_date" in trades_df.columns else "trade_id"
         st.bar_chart(trades_df, x=x_col, y="pnl")
 
-    sort_col = "entry_date" if "entry_date" in trades_df.columns else trades_df.columns[0]
+    sort_col = (
+        "entry_date" if "entry_date" in trades_df.columns else trades_df.columns[0]
+    )
     sorted_df = trades_df.sort_values(by=sort_col, ascending=False)
     st.dataframe(sorted_df, use_container_width=True)

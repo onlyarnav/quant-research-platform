@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import math
 
-import numpy as np
 import pandas as pd
 
 from config.settings import settings
@@ -39,7 +38,9 @@ class PerformanceMetrics:
             raise ValueError("trading_days_per_year must be positive.")
 
         self.risk_free_rate: float = (
-            settings.PORTFOLIO_RISK_FREE_RATE if risk_free_rate is None else risk_free_rate
+            settings.PORTFOLIO_RISK_FREE_RATE
+            if risk_free_rate is None
+            else risk_free_rate
         )
         self.trading_days_per_year: int = trading_days_per_year
 
@@ -58,7 +59,9 @@ class PerformanceMetrics:
 
         missing = required_cols - set(portfolio_history_df.columns)
         if missing:
-            raise ValueError(f"portfolio_history_df missing required columns: {missing}")
+            raise ValueError(
+                f"portfolio_history_df missing required columns: {missing}"
+            )
 
     def total_return(self, portfolio_history_df: pd.DataFrame) -> float:
         """Compute cumulative total return over portfolio history."""
@@ -114,7 +117,9 @@ class PerformanceMetrics:
         """Compute annualized Sortino ratio using negative returns (< 0) for downside risk."""
         self._validate_portfolio_history(portfolio_history_df)
         ann_ret = self.annualized_return(portfolio_history_df)
-        neg_returns = portfolio_history_df[portfolio_history_df["daily_return"] < 0]["daily_return"]
+        neg_returns = portfolio_history_df[portfolio_history_df["daily_return"] < 0][
+            "daily_return"
+        ]
         if len(neg_returns) == 0:
             logger.warning(
                 "No downside deviation observed (no negative daily returns); Sortino ratio undefined."
@@ -166,7 +171,9 @@ class PerformanceMetrics:
     ) -> float:
         """Compute Conditional Value at Risk (CVaR / Expected Shortfall)."""
         self._validate_portfolio_history(portfolio_history_df)
-        var_val = self.value_at_risk(portfolio_history_df, confidence_level=confidence_level)
+        var_val = self.value_at_risk(
+            portfolio_history_df, confidence_level=confidence_level
+        )
         tail_returns = portfolio_history_df[
             portfolio_history_df["daily_return"] <= var_val
         ]["daily_return"]
@@ -177,10 +184,63 @@ class PerformanceMetrics:
             return var_val
         return float(tail_returns.mean())
 
+    def best_day(self, portfolio_history_df: pd.DataFrame) -> float:
+        """Compute the maximum single-day return."""
+        self._validate_portfolio_history(portfolio_history_df)
+        return float(portfolio_history_df["daily_return"].max())
+
+    def worst_day(self, portfolio_history_df: pd.DataFrame) -> float:
+        """Compute the minimum single-day return."""
+        self._validate_portfolio_history(portfolio_history_df)
+        return float(portfolio_history_df["daily_return"].min())
+
+    def positive_days_ratio(self, portfolio_history_df: pd.DataFrame) -> float:
+        """Compute fraction of days with positive return (daily_return > 0)."""
+        self._validate_portfolio_history(portfolio_history_df)
+        return float(
+            (portfolio_history_df["daily_return"] > 0).sum() / len(portfolio_history_df)
+        )
+
+    def max_drawdown_duration_days(self, portfolio_history_df: pd.DataFrame) -> int:
+        """
+        Compute longest run of consecutive rows with drawdown < 0 in calendar days.
+
+        Measures calendar days from peak date to recovery date (or end of sample).
+        """
+        self._validate_portfolio_history(
+            portfolio_history_df, required_extra_cols={"drawdown"}
+        )
+        df = portfolio_history_df.sort_values("date").reset_index(drop=True)
+        dates = pd.to_datetime(df["date"]).tolist()
+        dds = df["drawdown"].tolist()
+
+        max_duration = 0
+        in_drawdown = False
+        peak_idx = 0
+
+        for i, dd in enumerate(dds):
+            if dd < -1e-9:
+                if not in_drawdown:
+                    in_drawdown = True
+                    peak_idx = max(0, i - 1)
+            else:
+                if in_drawdown:
+                    in_drawdown = False
+                    duration = (dates[i] - dates[peak_idx]).days
+                    if duration > max_duration:
+                        max_duration = duration
+
+        if in_drawdown and dates:
+            duration = (dates[-1] - dates[peak_idx]).days
+            if duration > max_duration:
+                max_duration = duration
+
+        return max_duration
+
     def compute_all(
-        self, portfolio_history_df: pd.DataFrame
+        self, portfolio_history_df: pd.DataFrame, extended: bool = False
     ) -> dict[str, float]:
-        """Compute all portfolio performance and risk metrics into a dictionary."""
+        """Compute portfolio performance and risk metrics into a dictionary."""
         self._validate_portfolio_history(
             portfolio_history_df, required_extra_cols={"drawdown"}
         )
@@ -191,7 +251,7 @@ class PerformanceMetrics:
             sharpe,
             mdd,
         )
-        return {
+        base = {
             "total_return": self.total_return(portfolio_history_df),
             "annualized_return": self.annualized_return(portfolio_history_df),
             "annualized_volatility": self.annualized_volatility(portfolio_history_df),
@@ -206,3 +266,11 @@ class PerformanceMetrics:
                 portfolio_history_df, confidence_level=0.95
             ),
         }
+        if extended:
+            base["best_day"] = self.best_day(portfolio_history_df)
+            base["worst_day"] = self.worst_day(portfolio_history_df)
+            base["positive_days_ratio"] = self.positive_days_ratio(portfolio_history_df)
+            base["max_drawdown_duration_days"] = float(
+                self.max_drawdown_duration_days(portfolio_history_df)
+            )
+        return base

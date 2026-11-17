@@ -22,7 +22,9 @@ def _format_metric_val(val: Any, is_pct: bool = False) -> str:
     return f"{val:.2%}" if is_pct else f"{val:.2f}"
 
 
-def render(strategy_name: str, start_date: pd.Timestamp, end_date: pd.Timestamp) -> None:
+def render(
+    strategy_name: str, start_date: pd.Timestamp, end_date: pd.Timestamp
+) -> None:
     """
     Render the Portfolio Performance dashboard page.
 
@@ -50,18 +52,33 @@ def render(strategy_name: str, start_date: pd.Timestamp, end_date: pd.Timestamp)
         st.warning(f"Could not compute full metrics: {exc}")
 
     cols = st.columns(6)
-    cols[0].metric("Total Return", _format_metric_val(metrics.get("total_return"), is_pct=True))
-    cols[1].metric("Annualized Return", _format_metric_val(metrics.get("annualized_return"), is_pct=True))
+    cols[0].metric(
+        "Total Return", _format_metric_val(metrics.get("total_return"), is_pct=True)
+    )
+    cols[1].metric(
+        "Annualized Return",
+        _format_metric_val(metrics.get("annualized_return"), is_pct=True),
+    )
     cols[2].metric("Sharpe Ratio", _format_metric_val(metrics.get("sharpe_ratio")))
-    cols[3].metric("Max Drawdown", _format_metric_val(metrics.get("max_drawdown"), is_pct=True))
+    cols[3].metric(
+        "Max Drawdown", _format_metric_val(metrics.get("max_drawdown"), is_pct=True)
+    )
     cols[4].metric("Sortino Ratio", _format_metric_val(metrics.get("sortino_ratio")))
     cols[5].metric("Calmar Ratio", _format_metric_val(metrics.get("calmar_ratio")))
 
-    if "cumulative_return" in df.columns and "date" in df.columns and df["cumulative_return"].notna().any():
+    if (
+        "cumulative_return" in df.columns
+        and "date" in df.columns
+        and df["cumulative_return"].notna().any()
+    ):
         st.subheader("Cumulative Return")
         st.line_chart(df.set_index("date")["cumulative_return"])
 
-    if "drawdown" in df.columns and "date" in df.columns and df["drawdown"].notna().any():
+    if (
+        "drawdown" in df.columns
+        and "date" in df.columns
+        and df["drawdown"].notna().any()
+    ):
         st.subheader("Drawdown")
         st.line_chart(df.set_index("date")["drawdown"])
 

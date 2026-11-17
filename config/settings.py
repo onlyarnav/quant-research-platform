@@ -12,6 +12,7 @@ Usage:
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -87,6 +88,27 @@ class Settings(BaseSettings):
 
     # ── MLflow ────────────────────────────────────────────────
     MLFLOW_TRACKING_URI: str = Field(default="sqlite:///mlflow.db")
+
+    # ── Quantitative Strategy, Portfolio & Pipeline Settings ───
+    BACKTEST_RESULTS_PATH: Path = _PROJECT_ROOT / "data" / "backtests"
+    BACKTEST_EXECUTION_LAG: int = Field(default=0)
+    BACKTEST_CASH_RESERVE: float = Field(default=0.0)
+    BACKTEST_ALLOCATION_METHOD: str = Field(default="fixed_notional")
+    BACKTEST_REBALANCE_FREQUENCY: str = Field(default="on_signal")
+    BACKTEST_REBALANCE_TOLERANCE: float = Field(default=0.0025)
+    BACKTEST_STOP_LOSS: float | None = Field(default=None)
+    BACKTEST_TAKE_PROFIT: float | None = Field(default=None)
+    BACKTEST_LOOKBACK_WINDOW: int = Field(default=60)
+    BENCHMARK_SYMBOL: str = Field(default="NIFTY50")
+    TRADING_DAYS_PER_YEAR: int = Field(default=252)
+    ROLLING_WINDOW: int = Field(default=63)
+    VAR_CONFIDENCE: float = Field(default=0.95)
+    PIPELINE_RUNS_PATH: Path = _PROJECT_ROOT / "data" / "pipeline_runs"
+    API_HOST: str = Field(default="127.0.0.1")
+    API_PORT: int = Field(default=8000)
+    DASHBOARD_API_URL: str | None = Field(default=None)
+    DASHBOARD_API_KEY: str | None = Field(default=None)
+    DASHBOARD_CACHE_TTL_SECONDS: int = Field(default=60)
 
     # ── Validators ────────────────────────────────────────────
     @field_validator("DATA_UPDATE_MODE")
@@ -167,6 +189,92 @@ class Settings(BaseSettings):
     def validate_signal_threshold(cls, v: float) -> float:
         if v < 0:
             raise ValueError(f"SIGNAL_THRESHOLD must be >= 0, got {v}")
+        return v
+
+    @field_validator("BACKTEST_CASH_RESERVE")
+    @classmethod
+    def validate_backtest_cash_reserve(cls, v: float) -> float:
+        if not (0.0 <= v < 1.0):
+            raise ValueError(f"BACKTEST_CASH_RESERVE must be in [0, 1), got {v}")
+        return v
+
+    @field_validator("BACKTEST_EXECUTION_LAG")
+    @classmethod
+    def validate_backtest_execution_lag(cls, v: int) -> int:
+        if v < 0:
+            raise ValueError(f"BACKTEST_EXECUTION_LAG must be >= 0, got {v}")
+        return v
+
+    @field_validator("BACKTEST_ALLOCATION_METHOD")
+    @classmethod
+    def validate_backtest_allocation_method(cls, v: str) -> str:
+        allowed = {
+            "fixed_notional",
+            "equal_weight",
+            "signal_weighted",
+            "volatility_weighted",
+            "risk_parity",
+            "mean_variance",
+        }
+        if v not in allowed:
+            raise ValueError(
+                f"BACKTEST_ALLOCATION_METHOD must be one of {allowed}, got '{v}'"
+            )
+        return v
+
+    @field_validator("BACKTEST_REBALANCE_FREQUENCY")
+    @classmethod
+    def validate_backtest_rebalance_frequency(cls, v: str) -> str:
+        allowed = {"on_signal", "daily", "weekly", "monthly"}
+        if v not in allowed:
+            raise ValueError(
+                f"BACKTEST_REBALANCE_FREQUENCY must be one of {allowed}, got '{v}'"
+            )
+        return v
+
+    @field_validator("BACKTEST_STOP_LOSS", "BACKTEST_TAKE_PROFIT", mode="before")
+    @classmethod
+    def validate_stop_and_take_profit(cls, v: Any) -> float | None:
+        if v is None or v == "":
+            return None
+        v_float = float(v)
+        if not (0.0 < v_float <= 1.0):
+            raise ValueError(f"Stop loss/take profit must be in (0, 1], got {v_float}")
+        return v_float
+
+    @field_validator("ROLLING_WINDOW")
+    @classmethod
+    def validate_rolling_window(cls, v: int) -> int:
+        if v < 2:
+            raise ValueError(f"ROLLING_WINDOW must be >= 2, got {v}")
+        return v
+
+    @field_validator("VAR_CONFIDENCE")
+    @classmethod
+    def validate_var_confidence(cls, v: float) -> float:
+        if not (0.0 < v < 1.0):
+            raise ValueError(f"VAR_CONFIDENCE must be in (0, 1), got {v}")
+        return v
+
+    @field_validator("TRADING_DAYS_PER_YEAR")
+    @classmethod
+    def validate_trading_days_per_year(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError(f"TRADING_DAYS_PER_YEAR must be >= 1, got {v}")
+        return v
+
+    @field_validator("API_PORT")
+    @classmethod
+    def validate_api_port(cls, v: int) -> int:
+        if not (1 <= v <= 65535):
+            raise ValueError(f"API_PORT must be in 1-65535, got {v}")
+        return v
+
+    @field_validator("DASHBOARD_API_URL", "DASHBOARD_API_KEY", mode="before")
+    @classmethod
+    def validate_optional_strings(cls, v: Any) -> Any:
+        if v == "" or v is None:
+            return None
         return v
 
 

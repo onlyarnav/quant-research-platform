@@ -43,12 +43,15 @@ class MeanVarianceAllocator:
             ValueError: If lookback_window < 2.
         """
         if lookback_window < 2:
-            raise ValueError(f"lookback_window must be at least 2, got {lookback_window}")
+            raise ValueError(
+                f"lookback_window must be at least 2, got {lookback_window}"
+            )
 
         self.lookback_window = lookback_window
 
         if risk_free_rate is None:
             from config.settings import settings
+
             risk_free_rate = settings.PORTFOLIO_RISK_FREE_RATE
 
         self.risk_free_rate = risk_free_rate
@@ -108,14 +111,17 @@ class MeanVarianceAllocator:
         price_matrix = price_matrix.sort_index().tail(self.lookback_window)
 
         eligible_symbols = [
-            symbol for symbol in buy_symbols
-            if symbol in price_matrix.columns and price_matrix[symbol].notna().sum() >= self.lookback_window
+            symbol
+            for symbol in buy_symbols
+            if symbol in price_matrix.columns
+            and price_matrix[symbol].notna().sum() >= self.lookback_window
         ]
 
         excluded = set(buy_symbols) - set(eligible_symbols)
         if excluded:
             logger.warning(
-                "Excluding symbols with insufficient price history: %s", sorted(excluded)
+                "Excluding symbols with insufficient price history: %s",
+                sorted(excluded),
             )
 
         price_matrix = price_matrix[eligible_symbols]
@@ -136,7 +142,9 @@ class MeanVarianceAllocator:
             cleaned_weights = ef.clean_weights()
 
             allocation = {
-                symbol: weight for symbol, weight in cleaned_weights.items() if weight > 0
+                symbol: weight
+                for symbol, weight in cleaned_weights.items()
+                if weight > 0
             }
 
             if not allocation:
@@ -146,7 +154,9 @@ class MeanVarianceAllocator:
                 return self._equal_weight_fallback(eligible_symbols)
 
             total = sum(allocation.values())
-            allocation = {symbol: weight / total for symbol, weight in allocation.items()}
+            allocation = {
+                symbol: weight / total for symbol, weight in allocation.items()
+            }
 
             logger.info(
                 "Mean-variance allocation across %d symbols (excluded %d).",

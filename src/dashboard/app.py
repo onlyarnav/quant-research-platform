@@ -1,76 +1,111 @@
-"""Main Streamlit application entrypoint for Quant Research Platform."""
+"""
+Streamlit quantitative research and production dashboard application.
+"""
 
 from __future__ import annotations
 
-from datetime import date
+import sys
+from pathlib import Path
 
-import pandas as pd
-import streamlit as st
+# Fix Streamlit path shadowing: Streamlit adds script directory (src/dashboard)
+# to sys.path, which causes 'config.py' to shadow the top-level 'config' package.
+_script_dir = str(Path(__file__).resolve().parent)
+while _script_dir in sys.path:
+    sys.path.remove(_script_dir)
 
-from src.dashboard import (
-    allocation_page,
-    benchmark_page,
-    data_loader,
-    performance_page,
-    trades_page,
+_project_root = str(Path(__file__).resolve().parent.parent.parent)
+while _project_root in sys.path:
+    sys.path.remove(_project_root)
+sys.path.insert(0, _project_root)
+
+# If 'config' is cached in sys.modules as a module (without __path__), evict it
+if "config" in sys.modules and not hasattr(sys.modules["config"], "__path__"):
+    del sys.modules["config"]
+
+import streamlit as st  # noqa: E402
+
+from src.dashboard.client import DashboardClient, get_client  # noqa: E402
+from src.dashboard.views import (  # noqa: E402
+    allocation,
+    benchmark,
+    experiments,
+    overview,
+    performance,
+    pipeline,
+    run_backtest,
+    signals,
+    trades,
 )
-from src.utils.logger import get_logger
 
-logger = get_logger(__name__)
+PAGE_DISPATCH = {
+    "Overview": overview.render,
+    "Performance": performance.render,
+    "Trades": trades.render,
+    "Allocation": allocation.render,
+    "Benchmark": benchmark.render,
+    "Signals": signals.render,
+    "Experiments": experiments.render,
+    "Pipeline": pipeline.render,
+    "Run Backtest": run_backtest.render,
+}
 
-st.set_page_config(page_title="Quant Research Platform", layout="wide")
 
-
-def main() -> None:
-    """Streamlit sidebar navigation and page dispatch router."""
-    st.sidebar.title("Navigation")
-    page = st.sidebar.radio(
-        "Select Page",
-        [
-            "Portfolio Performance",
-            "Trade Log",
-            "Allocation Breakdown",
-            "Benchmark Comparison",
-        ],
+def main(client: DashboardClient | None = None) -> None:
+    """Main Streamlit execution and routing entrypoint."""
+    st.set_page_config(
+        page_title="Quant Research Platform",
+        layout="wide",
+        initial_sidebar_state="expanded",
     )
 
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("Filters")
+    cli = client or get_client()
 
-    strategy_name = st.sidebar.text_input("Strategy Name", value="NIFTY50_MOMENTUM")
+    # Sidebar Header & Navigation
+    st.sidebar.title("Quant Research")
+    page_name = st.sidebar.radio("Navigation", list(PAGE_DISPATCH.keys()), index=0)
 
-    available_symbols = data_loader.load_available_symbols()
-    if available_symbols:
-        symbol = st.sidebar.selectbox("Symbol", available_symbols, index=0)
+    st.sidebar.divider()
+
+    # Backtest Run Selector
+    run_id = None
+    try:
+        runs = cli.list_runs(limit=50)
+    except Exception:
+        runs = []
+
+    if runs:
+        options = [r["run_id"] for r in runs]
+        labels = {
+            r["run_id"]: (
+                f"{r.get('strategy_name', 'strategy')} "
+                f"({str(r.get('created_at', ''))[:10]})"
+            )
+            for r in runs
+        }
+        selected = st.sidebar.selectbox(
+            "Selected Backtest Run",
+            options=options,
+            format_func=lambda x: labels.get(x, x),
+            index=0,
+        )
+        run_id = selected
     else:
-        symbol = st.sidebar.text_input("Symbol", value="RELIANCE.NS")
+        st.sidebar.info("No saved runs found.")
 
-    default_start = date(2024, 1, 1)
-    default_end = date(2024, 12, 31)
+    st.sidebar.divider()
 
-    date_selection = st.sidebar.date_input(
-        "Date Range",
-        value=(default_start, default_end),
-    )
+    # Health Badge in Sidebar
+    try:
+        health_info = cli.health()
+        status = health_info.get("overall", "ok").upper()
+        badge = "🟢" if status == "OK" else ("🟡" if status == "DEGRADED" else "🔴")
+        st.sidebar.caption(f"System Health: {badge} {status}")
+    except Exception:
+        st.sidebar.caption("System Health: ⚪ UNKNOWN")
 
-    if isinstance(date_selection, (tuple, list)) and len(date_selection) == 2:
-        start_date = pd.Timestamp(date_selection[0])
-        end_date = pd.Timestamp(date_selection[1])
-    elif isinstance(date_selection, (tuple, list)) and len(date_selection) == 1:
-        start_date = pd.Timestamp(date_selection[0])
-        end_date = pd.Timestamp(date_selection[0])
-    else:
-        start_date = pd.Timestamp(default_start)
-        end_date = pd.Timestamp(default_end)
-
-    if page == "Portfolio Performance":
-        performance_page.render(strategy_name, start_date, end_date)
-    elif page == "Trade Log":
-        trades_page.render(symbol, start_date, end_date)
-    elif page == "Allocation Breakdown":
-        allocation_page.render(start_date, end_date)
-    elif page == "Benchmark Comparison":
-        benchmark_page.render(strategy_name, start_date, end_date)
+    # Render Active Page
+    render_fn = PAGE_DISPATCH.get(page_name, overview.render)
+    render_fn(cli, run_id=run_id)
 
 
 if __name__ == "__main__":

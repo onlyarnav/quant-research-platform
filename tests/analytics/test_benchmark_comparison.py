@@ -50,7 +50,9 @@ def test_input_validation() -> None:
     with pytest.raises(ValueError, match="strategy_history_df cannot be None or empty"):
         bc.compare(empty_df, valid_df)
 
-    with pytest.raises(ValueError, match="benchmark_history_df cannot be None or empty"):
+    with pytest.raises(
+        ValueError, match="benchmark_history_df cannot be None or empty"
+    ):
         bc.compare(valid_df, empty_df)
 
     missing_cols_df = pd.DataFrame({"date": [pd.Timestamp("2024-01-01")]})
@@ -115,7 +117,9 @@ def test_distinct_strategy_and_benchmark_golden() -> None:
     assert not math.isnan(res["information_ratio"])
 
 
-def test_flat_benchmark_zero_variance_fallback(caplog: pytest.LogCaptureFixture) -> None:
+def test_flat_benchmark_zero_variance_fallback(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Test flat benchmark (zero return variance) produces NaN beta with warning logged."""
     bc = BenchmarkComparison()
     strat_df = _sample_history_df()

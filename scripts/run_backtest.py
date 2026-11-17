@@ -1,13 +1,12 @@
 """
-CLI runner for the Backtesting Engine and Portfolio Simulator.
+CLI runner for the Backtesting Engine, Portfolio Allocators, and Analytics Pipeline.
 
-Provides both a standalone demo mode (no pre-existing data required)
-and a production mode that loads signals and processed prices from Parquet.
+Supports realistic capital allocation, rebalancing schedules, risk stop rules,
+and full performance analytics.
 
 Usage:
     python scripts/run_backtest.py --demo
-    python scripts/run_backtest.py --symbol INFY
-    python scripts/run_backtest.py --universe equity
+    python scripts/run_backtest.py --strategy-name trend_following --allocation-method equal_weight
 """
 
 from __future__ import annotations
@@ -22,207 +21,201 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from config.settings import settings
-from src.backtesting.portfolio_simulator import PortfolioSimulator
-from src.data_storage.parquet_writer import DataLayer, ParquetWriter
+from src.analytics.backtest_pipeline import BacktestPipeline
+from src.backtesting.backtest_config import (
+    AllocationMethod,
+    BacktestConfig,
+    RebalanceFrequency,
+)
 
 
 def parse_args() -> argparse.Namespace:
-    """Parse command line arguments."""
+    """Parse CLI configuration parameters."""
     parser = argparse.ArgumentParser(
-        description="Run backtesting engine and portfolio simulation."
+        description="Execute quantitative backtesting pipeline."
     )
     parser.add_argument(
-        "--demo",
-        action="store_true",
-        help="Run standalone demo with synthetic price/signal data (no files needed).",
+        "--demo", action="store_true", help="Run with synthetic demo data."
     )
     parser.add_argument(
-        "--symbol",
+        "--strategy-name",
         type=str,
-        default=None,
-        help="Specific symbol to backtest (e.g., INFY).",
+        default="momentum_daily",
+        help="Strategy identifier.",
+    )
+    parser.add_argument(
+        "--allocation-method",
+        type=str,
+        default="equal_weight",
+        choices=[
+            "equal_weight",
+            "signal_weighted",
+            "volatility_weighted",
+            "risk_parity",
+            "fixed_notional",
+        ],
+        help="Capital allocation weighting scheme.",
+    )
+    parser.add_argument(
+        "--rebalance",
+        type=str,
+        default="daily",
+        choices=["daily", "weekly", "monthly", "on_signal"],
+        help="Portfolio rebalance schedule.",
     )
     parser.add_argument(
         "--initial-capital",
         type=float,
         default=settings.INITIAL_CAPITAL,
-        help="Total portfolio starting capital in INR.",
+        help="Starting capital (INR).",
     )
     parser.add_argument(
         "--max-position-size",
         type=float,
         default=settings.MAX_POSITION_SIZE,
-        help="Max capital fraction allocated per position (e.g. 0.05).",
+        help="Max position weight.",
+    )
+    parser.add_argument(
+        "--cash-reserve",
+        type=float,
+        default=settings.BACKTEST_CASH_RESERVE,
+        help="Unallocated cash fraction.",
+    )
+    parser.add_argument(
+        "--stop-loss", type=float, default=None, help="Stop loss fraction (e.g. 0.05)."
+    )
+    parser.add_argument(
+        "--take-profit",
+        type=float,
+        default=None,
+        help="Take profit fraction (e.g. 0.10).",
+    )
+    parser.add_argument(
+        "--execution-lag", type=int, default=1, help="Execution lag in days."
+    )
+    parser.add_argument(
+        "--allow-short", action="store_true", help="Enable short side positions."
+    )
+    parser.add_argument(
+        "--persist-db",
+        action="store_true",
+        help="Persist metrics & trades to PostgreSQL.",
+    )
+    parser.add_argument(
+        "--symbols", nargs="*", default=None, help="Specific symbols to include."
+    )
+    parser.add_argument(
+        "--symbol", type=str, default=None, help="Single symbol shorthand."
+    )
+    parser.add_argument(
+        "--start", type=str, default=None, help="Start date filter (YYYY-MM-DD)."
+    )
+    parser.add_argument(
+        "--end", type=str, default=None, help="End date filter (YYYY-MM-DD)."
     )
     return parser.parse_args()
 
 
 def generate_demo_data() -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Generate realistic synthetic price and signal data for demo execution."""
+    """Generate multi-asset synthetic prices and signals for demonstration."""
     dates = pd.date_range("2024-01-01", periods=60, freq="B")
     rng = np.random.default_rng(42)
-
     symbols = ["RELIANCE", "TCS", "INFY"]
-    price_records = []
-    signal_records = []
 
+    price_records, signal_records = [], []
     for sym in symbols:
-        base_price = (
-            1000.0 if sym == "RELIANCE" else (3000.0 if sym == "TCS" else 1500.0)
-        )
+        base_px = 1000.0 if sym == "RELIANCE" else (3000.0 if sym == "TCS" else 1500.0)
         returns = rng.normal(0.001, 0.015, len(dates))
-        prices = base_price * np.exp(np.cumsum(returns))
+        prices = base_px * np.exp(np.cumsum(returns))
+        signals = rng.choice([1, 0, -1], size=len(dates), p=[0.20, 0.60, 0.20])
 
-        # Generate signals: 1 = BUY, -1 = SELL, 0 = HOLD
-        raw_signals = rng.choice([1, 0, -1], size=len(dates), p=[0.15, 0.70, 0.15])
-
-        for d, px, sig in zip(dates, prices, raw_signals):
+        for d, px, sig in zip(dates, prices, signals):
             price_records.append(
-                {
-                    "symbol": sym,
-                    "date": d,
-                    "close": round(float(px), 2),
-                    "adj_close": round(float(px), 2),
-                }
+                {"symbol": sym, "date": d, "close": round(float(px), 2)}
             )
             signal_records.append(
                 {
                     "symbol": sym,
                     "date": d,
                     "signal": int(sig),
-                    "predicted_return": round(float(rng.normal(0, 0.01)), 4),
+                    "confidence": round(float(rng.uniform(0.5, 0.95)), 4),
                 }
             )
 
     return pd.DataFrame(signal_records), pd.DataFrame(price_records)
 
 
-def load_parquet_data(symbol: str | None) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Load signals and price parquet datasets from disk."""
-    writer = ParquetWriter()
-    signals_dir = Path(settings.DATA_SIGNALS_PATH) / "equity"
-    prices_dir = Path(settings.DATA_PROCESSED_PATH) / "equity"
-
-    if not signals_dir.exists() or not any(signals_dir.glob("*.parquet")):
-        raise FileNotFoundError(
-            f"No signal parquet files found in {signals_dir}. "
-            "Run with --demo flag to test without existing files."
-        )
-
-    all_signals = []
-    all_prices = []
-
-    target_files = (
-        [signals_dir / f"equity_{symbol}_daily.parquet"]
-        if symbol
-        else list(signals_dir.glob("equity_*_daily.parquet"))
-    )
-
-    for sig_file in target_files:
-        sym = sig_file.name.replace("equity_", "").replace("_daily.parquet", "")
-        price_file = prices_dir / f"equity_{sym}_daily.parquet"
-        if not price_file.exists():
-            continue
-
-        sig_df = writer.read(
-            layer=DataLayer.SIGNALS,
-            asset_class="equity",
-            symbol=sym,
-            timeframe="daily",
-        )
-        px_df = writer.read(
-            layer=DataLayer.PROCESSED,
-            asset_class="equity",
-            symbol=sym,
-            timeframe="daily",
-        )
-        all_signals.append(sig_df)
-        all_prices.append(px_df)
-
-    if not all_signals:
-        raise ValueError("Could not find matching signal and price data.")
-
-    return pd.concat(all_signals, ignore_index=True), pd.concat(
-        all_prices, ignore_index=True
-    )
-
-
-def print_backtest_report(sim_result, initial_capital: float) -> None:
-    """Print formatted summary of the backtest simulation."""
-    trades = sim_result.trades
-    history = sim_result.portfolio_history
-    ending_val = history[-1].portfolio_value if history else initial_capital
-    total_return = (ending_val / initial_capital) - 1.0
-    max_dd = min((s.drawdown for s in history), default=0.0)
-
-    print("\n" + "=" * 65)
-    print("                BACKTEST SIMULATION REPORT               ")
-    print("=" * 65)
-    print(f"Initial Capital    :  INR {initial_capital:,.2f}")
-    print(f"Ending Portfolio   :  INR {ending_val:,.2f}")
-    print(f"Total Net Return   :  {total_return:+.2%}")
-    print(f"Maximum Drawdown   :  {max_dd:.2%}")
-    print(f"Total Trades       :  {len(trades)}")
-
-    if trades:
-        df = sim_result.trades_df
-        wins = df[df["pnl"] > 0]
-        losses = df[df["pnl"] < 0]
-        win_rate = len(wins) / len(df) if len(df) > 0 else 0.0
-
-        print(f"Win Rate           :  {win_rate:.1%} ({len(wins)}W / {len(losses)}L)")
-        print(f"Total Gross PnL    :  INR {df['pnl'].sum() + df['fees'].sum():+,.2f}")
-        print(f"Total Fees Paid    :  INR {df['fees'].sum():,.2f}")
-        print(f"Total Slippage Cost:  INR {df['slippage_cost'].sum():,.2f}")
-        print(f"Total Net PnL      :  INR {df['pnl'].sum():+,.2f}")
-
-        print("\n--- SAMPLE RECENT TRADES ---")
-        cols = [
-            "trade_id",
-            "symbol",
-            "entry_date",
-            "exit_date",
-            "entry_price",
-            "exit_price",
-            "pnl",
-            "return_pct",
-        ]
-        preview = df[cols].tail(5).copy()
-        preview["entry_date"] = preview["entry_date"].dt.strftime("%Y-%m-%d")
-        preview["exit_date"] = preview["exit_date"].dt.strftime("%Y-%m-%d")
-        preview["entry_price"] = preview["entry_price"].map(lambda x: f"{x:,.1f}")
-        preview["exit_price"] = preview["exit_price"].map(lambda x: f"{x:,.1f}")
-        preview["pnl"] = preview["pnl"].map(lambda x: f"{x:+,.1f}")
-        preview["return_pct"] = preview["return_pct"].map(lambda x: f"{x:+.2%}")
-        print(preview.to_string(index=False))
-
-    print("=" * 65 + "\n")
-
-
 def main() -> None:
-    """Execute the backtest runner."""
+    """Run CLI backtesting."""
     args = parse_args()
+    sym_list = args.symbols or ([args.symbol] if args.symbol else None)
 
-    if args.demo:
-        print(
-            "[INFO] Running standalone backtest demo with synthetic multi-asset data..."
-        )
-        signals_df, prices_df = generate_demo_data()
-    else:
-        try:
-            print(f"[INFO] Loading Parquet data for symbol={args.symbol or 'all'}...")
-            signals_df, prices_df = load_parquet_data(args.symbol)
-        except Exception as e:
-            print(f"[WARNING] {e}")
-            print("[INFO] Falling back to demo mode to show backtesting engine...")
-            signals_df, prices_df = generate_demo_data()
-
-    simulator = PortfolioSimulator(
+    cfg = BacktestConfig(
+        strategy_name=args.strategy_name,
+        allocation_method=AllocationMethod(args.allocation_method),
+        rebalance_frequency=RebalanceFrequency(args.rebalance),
         initial_capital=args.initial_capital,
         max_position_size=args.max_position_size,
+        cash_reserve=args.cash_reserve,
+        stop_loss_pct=args.stop_loss,
+        take_profit_pct=args.take_profit,
+        execution_lag=args.execution_lag,
+        allow_short=args.allow_short,
     )
-    result = simulator.run(signals_df, prices_df)
-    print_backtest_report(result, args.initial_capital)
+
+    pipeline = BacktestPipeline()
+    signals_df, prices_df = None, None
+
+    if args.demo:
+        print("[INFO] Running backtest with synthetic multi-asset demo data...")
+        signals_df, prices_df = generate_demo_data()
+    else:
+        print(
+            f"[INFO] Running backtest '{cfg.strategy_name}' across {sym_list or 'all'} symbols..."
+        )
+
+    try:
+        res = pipeline.run(
+            config=cfg,
+            symbols=sym_list,
+            start=args.start,
+            end=args.end,
+            persist=True,
+            persist_db=args.persist_db,
+            signals_df=signals_df,
+            prices_df=prices_df,
+        )
+    except Exception as exc:
+        if not args.demo:
+            print(
+                f"[WARNING] Could not load data lake files ({exc}). Falling back to synthetic demo data..."
+            )
+            signals_df, prices_df = generate_demo_data()
+            res = pipeline.run(
+                config=cfg, signals_df=signals_df, prices_df=prices_df, persist=True
+            )
+        else:
+            raise exc
+
+    m = res.report.metrics
+    t = res.report.trade_stats
+    print("\n" + "=" * 65)
+    print(f"             BACKTEST REPORT: {res.run_id}            ")
+    print("=" * 65)
+    print(f"Strategy Name      : {cfg.strategy_name}")
+    print(f"Allocation Scheme  : {cfg.allocation_method.value}")
+    print(f"Total Return       : {m.get('total_return', 0.0):+.2%}")
+    print(f"Annualized Return  : {m.get('annualized_return', 0.0):+.2%}")
+    print(f"Annualized Vol     : {m.get('annualized_volatility', 0.0):.2%}")
+    print(f"Sharpe Ratio       : {m.get('sharpe_ratio', float('nan')):.2f}")
+    print(f"Sortino Ratio      : {m.get('sortino_ratio', float('nan')):.2f}")
+    print(f"Maximum Drawdown   : {m.get('max_drawdown', 0.0):.2%}")
+    print(f"Calmar Ratio       : {m.get('calmar_ratio', float('nan')):.2f}")
+    print(f"Total Trades       : {int(t.get('total_trades', 0))}")
+    print(f"Win Rate           : {t.get('win_rate', 0.0):.1%}")
+    print(f"Profit Factor      : {t.get('profit_factor', float('nan')):.2f}")
+    print(f"Artifacts Saved To : {res.run_dir}")
+    print("=" * 65 + "\n")
 
 
 if __name__ == "__main__":

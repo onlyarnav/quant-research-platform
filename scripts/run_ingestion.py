@@ -22,7 +22,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from config.settings import settings
 from src.data_pipeline.ingestion import IngestionPipeline
-from src.data_pipeline.processing import ProcessingPipeline, ProcessingConfig
+from src.data_pipeline.processing import ProcessingConfig, ProcessingPipeline
 from src.data_pipeline.universe import (
     get_full_universe,
     get_nse_equity_universe,
@@ -88,9 +88,7 @@ def main() -> None:
         sys.exit(1)
 
     # ── Processing ────────────────────────────────────────────
-    successful_assets = [
-        r.symbol for r in ingestion_report.results if r.success
-    ]
+    successful_assets = [r.symbol for r in ingestion_report.results if r.success]
 
     processing_configs = [
         ProcessingConfig(
@@ -113,8 +111,16 @@ def main() -> None:
 
     logger.info("=" * 60)
     logger.info("PIPELINE SUMMARY")
-    logger.info("Ingestion  — succeeded=%s failed=%s", ingestion_report.succeeded, ingestion_report.failed)
-    logger.info("Processing — succeeded=%s failed=%s", processing_report.succeeded, processing_report.failed)
+    logger.info(
+        "Ingestion  — succeeded=%s failed=%s",
+        ingestion_report.succeeded,
+        ingestion_report.failed,
+    )
+    logger.info(
+        "Processing — succeeded=%s failed=%s",
+        processing_report.succeeded,
+        processing_report.failed,
+    )
     logger.info("=" * 60)
 
     if processing_report.failed > 0:
