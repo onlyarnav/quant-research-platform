@@ -1,0 +1,107 @@
+﻿<!DOCTYPE html><html><head><meta charset='utf-8'><style>
+body { margin: 0; padding: 20px; background: white; font-family: 'Times New Roman', serif; }
+.cls-box { fill: #f8fafc; stroke: #334155; stroke-width: 1.5; rx: 4px; }
+.cls-hdr { fill: #0f172a; }
+.cls-title { fill: white; font-size: 13px; font-weight: bold; text-anchor: middle; }
+.cls-line { font-size: 11px; fill: #1e293b; }
+.inh-line { stroke: #334155; stroke-width: 1.8; marker-end: url(#arrowinh); }
+</style></head><body>
+<svg viewBox='0 0 1060 680' width='1020' height='650' xmlns='http://www.w3.org/2000/svg'>
+<defs><marker id='arrowinh' markerWidth='10' markerHeight='8' refX='9' refY='4' orient='auto'>
+<polygon points='0 0, 9 4, 0 8' fill='white' stroke='#334155' stroke-width='1.5'/></marker></defs>
+<rect x='10' y='10' width='1040' height='660' fill='#ffffff' stroke='#cbd5e1' stroke-width='2' rx='8'/>
+<text x='530' y='35' font-size='16' font-weight='bold' fill='#0f172a' text-anchor='middle'>Core Object-Oriented Architecture: Model Hierarchy, Protocols & Backtester</text>
+
+<!-- BaseModel -->
+<g transform='translate(380, 60)'>
+<rect width='300' height='140' class='cls-box'/>
+<rect width='300' height='28' class='cls-hdr' rx='4'/>
+<text x='150' y='19' class='cls-title'>&lt;&lt;abstract&gt;&gt; BaseModel</text>
+<text x='15' y='46' class='cls-line'>+ name: str | model_type: str | is_fitted: bool</text>
+<line x1='0' y1='55' x2='300' y2='55' stroke='#94a3b8'/>
+<text x='15' y='75' class='cls-line'>+ fit(X: DataFrame, y: Series) : BaseModel*</text>
+<text x='15' y='95' class='cls-line'>+ predict(X: DataFrame) : ndarray*</text>
+<text x='15' y='115' class='cls-line'>+ get_feature_importance() : DataFrame*</text>
+<text x='15' y='132' class='cls-line'># _check_is_fitted() : void</text>
+</g>
+
+<!-- Concrete Models -->
+<g transform='translate(40, 260)'>
+<rect width='280' height='110' class='cls-box'/>
+<rect width='280' height='26' fill='#1e40af' rx='4'/>
+<text x='140' y='18' class='cls-title'>LinearModel (Ridge)</text>
+<text x='15' y='45' class='cls-line'>+ alpha: float = 1.0</text>
+<text x='15' y='65' class='cls-line'>+ fit_intercept: bool = True</text>
+<text x='15' y='85' class='cls-line'>+ fit(X, y) : LinearModel</text>
+<text x='15' y='102' class='cls-line'>+ predict(X) : ndarray</text>
+</g>
+
+<g transform='translate(380, 260)'>
+<rect width='300' height='120' class='cls-box'/>
+<rect width='300' height='26' fill='#15803d' rx='4'/>
+<text x='150' y='18' class='cls-title'>XGBoostModel</text>
+<text x='15' y='45' class='cls-line'>+ n_estimators: int = 100 | max_depth: int = 6</text>
+<text x='15' y='65' class='cls-line'>+ learning_rate: float = 0.1 | early_stopping: 20</text>
+<text x='15' y='85' class='cls-line'>+ fit(X, y, X_val, y_val) : XGBoostModel</text>
+<text x='15' y='105' class='cls-line'>+ predict(X) : ndarray</text>
+</g>
+
+<g transform='translate(740, 260)'>
+<rect width='280' height='120' class='cls-box'/>
+<rect width='280' height='26' fill='#b45309' rx='4'/>
+<text x='140' y='18' class='cls-title'>LightGBMModel</text>
+<text x='15' y='45' class='cls-line'>+ n_estimators: int = 100 | num_leaves: 31</text>
+<text x='15' y='65' class='cls-line'>+ learning_rate: float = 0.1 | early_stopping: 20</text>
+<text x='15' y='85' class='cls-line'>+ fit(X, y, X_val, y_val) : LightGBMModel</text>
+<text x='15' y='105' class='cls-line'>+ predict(X) : ndarray</text>
+</g>
+
+<line x1='180' y1='260' x2='450' y2='200' class='inh-line'/>
+<line x1='530' y1='260' x2='530' y2='200' class='inh-line'/>
+<line x1='880' y1='260' x2='610' y2='200' class='inh-line'/>
+
+<!-- Signal Protocol & Implementations -->
+<g transform='translate(40, 440)'>
+<rect width='300' height='190' class='cls-box'/>
+<rect width='300' height='26' fill='#4338ca' rx='4'/>
+<text x='150' y='18' class='cls-title'>&lt;&lt;protocol&gt;&gt; SignalGenerator</text>
+<text x='15' y='45' class='cls-line'>+ generate(predictions: DataFrame) : DataFrame</text>
+<line x1='0' y1='55' x2='300' y2='55' stroke='#94a3b8'/>
+<text x='15' y='75' class='cls-line' font-weight='bold'>ThresholdSignalGenerator</text>
+<text x='15' y='95' class='cls-line'>+ buy_threshold: float = +0.005</text>
+<text x='15' y='115' class='cls-line'>+ sell_threshold: float = -0.005</text>
+<text x='15' y='135' class='cls-line' font-weight='bold'>RankSignalGenerator / TopNSignal</text>
+<text x='15' y='155' class='cls-line'>+ top_n: int = 10 | bottom_n: int = 0</text>
+<text x='15' y='175' class='cls-line'>+ method: str = 'first' (deterministic tie-break)</text>
+</g>
+
+<!-- Backtesting Subsystem Classes -->
+<g transform='translate(400, 440)'>
+<rect width='300' height='190' class='cls-box'/>
+<rect width='300' height='26' fill='#0f766e' rx='4'/>
+<text x='150' y='18' class='cls-title'>PositionManager</text>
+<text x='15' y='45' class='cls-line'>+ max_position_size: float = 0.05 (5%)</text>
+<text x='15' y='65' class='cls-line'>+ initial_capital: float = 1,000,000 INR</text>
+<line x1='0' y1='75' x2='300' y2='75' stroke='#94a3b8'/>
+<text x='15' y='95' class='cls-line'>+ can_open_position(symbol, px, cash) : bool</text>
+<text x='15' y='115' class='cls-line'>+ calculate_order_qty(px, cash) : float</text>
+<text x='15' y='135' class='cls-line'>+ open_position(symbol, qty, fill_price)</text>
+<text x='15' y='155' class='cls-line'>+ close_position(symbol, fill_price) : Trade</text>
+<text x='15' y='175' class='cls-line'>+ mark_to_market(prices: dict) : float</text>
+</g>
+
+<g transform='translate(740, 440)'>
+<rect width='280' height='190' class='cls-box'/>
+<rect width='280' height='26' fill='#047857' rx='4'/>
+<text x='140' y='18' class='cls-title'>PortfolioSimulator</text>
+<text x='15' y='45' class='cls-line'>+ initial_capital: float = 1,000,000</text>
+<text x='15' y='65' class='cls-line'>+ transaction_cost: float = 0.001 (0.10%)</text>
+<text x='15' y='85' class='cls-line'>+ slippage: float = 0.0005 (0.05%)</text>
+<line x1='0' y1='95' x2='280' y2='95' stroke='#94a3b8'/>
+<text x='15' y='115' class='cls-line'>+ run(signals: DF, prices: DF) : tuple</text>
+<text x='15' y='135' class='cls-line'>- _process_day(date, day_sigs, day_px)</text>
+<text x='15' y='155' class='cls-line'>- _execute_sells() before _execute_buys()</text>
+<text x='15' y='175' class='cls-line'>- force_close_open_positions()</text>
+</g>
+
+</svg></body></html>

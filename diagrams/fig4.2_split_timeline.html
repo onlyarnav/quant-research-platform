@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html><html><head><meta charset='utf-8'><style>
+body { margin: 0; padding: 20px; background: white; font-family: 'Times New Roman', serif; }
+.bar-train { fill: #1e40af; }
+.bar-emb1 { fill: #dc2626; }
+.bar-val { fill: #d97706; }
+.bar-emb2 { fill: #dc2626; }
+.bar-test { fill: #15803d; }
+.txt-white { fill: white; font-size: 13px; font-weight: bold; text-anchor: middle; }
+.txt-sub { fill: white; font-size: 10px; text-anchor: middle; }
+.lbl-dark { fill: #0f172a; font-size: 12px; font-weight: bold; }
+</style></head><body>
+<svg viewBox='0 0 1060 400' width='1020' height='380' xmlns='http://www.w3.org/2000/svg'>
+<rect x='10' y='10' width='1040' height='380' fill='#ffffff' stroke='#cbd5e1' stroke-width='2' rx='8'/>
+<text x='530' y='35' font-size='16' font-weight='bold' fill='#0f172a' text-anchor='middle'>Leakage-Safe Chronological Partitioning with Embargo Buffers</text>
+
+<g transform='translate(50, 70)'>
+<!-- Train Bar -->
+<rect x='0' y='40' width='560' height='90' class='bar-train' rx='4'/>
+<text x='280' y='80' class='txt-white'>TRAINING SET (70% of Chronological Dates)</text>
+<text x='280' y='102' class='txt-sub'>Model parameter fitting (Ridge OLS, XGBoost, LightGBM)</text>
+
+<!-- Embargo 1 -->
+<rect x='565' y='40' width='30' height='90' class='bar-emb1' rx='2'/>
+<text x='580' y='90' fill='white' font-size='9' font-weight='bold' text-anchor='middle' transform='rotate(-90 580 90)'>EMBARGO</text>
+
+<!-- Val Bar -->
+<rect x='600' y='40' width='170' height='90' class='bar-val' rx='4'/>
+<text x='685' y='80' class='txt-white'>VALIDATION (15%)</text>
+<text x='685' y='102' class='txt-sub'>Early Stopping (20 rds)</text>
+
+<!-- Embargo 2 -->
+<rect x='775' y='40' width='30' height='90' class='bar-emb2' rx='2'/>
+<text x='790' y='90' fill='white' font-size='9' font-weight='bold' text-anchor='middle' transform='rotate(-90 790 90)'>EMBARGO</text>
+
+<!-- Test Bar -->
+<rect x='810' y='40' width='170' height='90' class='bar-test' rx='4'/>
+<text x='895' y='80' class='txt-white'>TEST SET (15%)</text>
+<text x='895' y='102' class='txt-sub'>Unbiased Evaluation</text>
+
+<!-- Timeline axis -->
+<line x1='0' y1='160' x2='980' y2='160' stroke='#334155' stroke-width='2'/>
+<circle cx='0' cy='160' r='5' fill='#334155'/>
+<circle cx='560' cy='160' r='5' fill='#334155'/>
+<circle cx='600' cy='160' r='5' fill='#334155'/>
+<circle cx='770' cy='160' r='5' fill='#334155'/>
+<circle cx='810' cy='160' r='5' fill='#334155'/>
+<circle cx='980' cy='160' r='5' fill='#334155'/>
+
+<text x='0' y='185' font-size='11' fill='#334155'>Start: 2015-01-01</text>
+<text x='540' y='185' font-size='11' fill='#334155'>Train End</text>
+<text x='670' y='185' font-size='11' fill='#334155'>Val Period</text>
+<text x='880' y='185' font-size='11' fill='#334155'>OOS Test End (2024)</text>
+</g>
+
+<!-- Explanatory Legend -->
+<g transform='translate(50, 270)'>
+<rect width='980' height='90' fill='#f8fafc' stroke='#cbd5e1' rx='4'/>
+<text x='15' y='25' class='lbl-dark'>Why Chronological Splitting + Embargo Prevents Forward-Looking Leakage:</text>
+<text x='15' y='45' font-size='11' fill='#334155'>1. Random K-Fold splits corrupt financial models by using future returns to predict past states (lookahead bias).</text>
+<text x='15' y='65' font-size='11' fill='#334155'>2. Overlapping multi-day target returns (e.g., 5-day and 10-day forward return) cross partition boundaries without an embargo.</text>
+<text x='15' y='82' font-size='11' fill='#334155'>3. The platform enforces an embargo buffer of width Ï„ (horizon days) between Train-Val and Val-Test splits.</text>
+</g>
+
+</svg></body></html>

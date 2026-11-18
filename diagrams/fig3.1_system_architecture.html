@@ -1,0 +1,124 @@
+﻿<!DOCTYPE html><html><head><meta charset='utf-8'><style>
+body { margin: 0; padding: 20px; background: white; font-family: 'Times New Roman', serif; }
+.card { fill: #f8fafc; stroke: #94a3b8; stroke-width: 1.5; rx: 6px; }
+.header { font-size: 15px; font-weight: bold; fill: #0f172a; text-anchor: middle; }
+.box-blue { fill: #1e40af; stroke: #1e3a8a; rx: 4px; }
+.box-teal { fill: #0f766e; stroke: #115e59; rx: 4px; }
+.box-amber { fill: #b45309; stroke: #92400e; rx: 4px; }
+.box-indigo { fill: #4338ca; stroke: #3730a3; rx: 4px; }
+.box-slate { fill: #334155; stroke: #1e293b; rx: 4px; }
+.box-emerald { fill: #047857; stroke: #065f46; rx: 4px; }
+.txt { fill: white; font-size: 13px; font-weight: bold; text-anchor: middle; }
+.subtxt { fill: #e2e8f0; font-size: 11px; text-anchor: middle; }
+.arrow { stroke: #334155; stroke-width: 2; marker-end: url(#arrowhead); }
+</style></head><body>
+<svg viewBox='0 0 1080 680' width='1040' height='650' xmlns='http://www.w3.org/2000/svg'>
+<defs><marker id='arrowhead' markerWidth='8' markerHeight='6' refX='7' refY='3' orient='auto'>
+<polygon points='0 0, 8 3, 0 6' fill='#334155'/></marker></defs>
+<rect x='10' y='10' width='1060' height='660' fill='#ffffff' stroke='#cbd5e1' stroke-width='2' rx='8'/>
+<text x='540' y='38' font-size='18' font-weight='bold' fill='#0f172a' text-anchor='middle'>Quantitative AI Research Platform â€” Layered System Architecture</text>
+
+<rect x='30' y='60' width='230' height='260' class='card'/>
+<text x='145' y='85' class='header'>1. Data Acquisition & Quality</text>
+<rect x='45' y='105' width='200' height='45' class='box-blue'/>
+<text x='145' y='126' class='txt'>yfinance NSE Connector</text>
+<text x='145' y='142' class='subtxt'>Exponential Backoff & Retries</text>
+<rect x='45' y='165' width='200' height='45' class='box-blue'/>
+<text x='145' y='186' class='txt'>Point-in-Time Validation Gate</text>
+<text x='145' y='202' class='subtxt'>Strict Reject (High &lt; Low, Low &gt; Close)</text>
+<rect x='45' y='225' width='200' height='45' class='box-blue'/>
+<text x='145' y='246' class='txt'>Data Cleaning & Returns</text>
+<text x='145' y='262' class='subtxt'>Simple & Log Return Calculation</text>
+
+<rect x='280' y='60' width='250' height='260' class='card'/>
+<text x='405' y='85' class='header'>2. Dual Storage Architecture</text>
+<rect x='295' y='105' width='220' height='90' class='box-teal'/>
+<text x='405' y='128' class='txt'>5-Tier Parquet Data Lake</text>
+<text x='405' y='146' class='subtxt'>raw/ â€¢ processed/ â€¢ features/</text>
+<text x='405' y='164' class='subtxt'>predictions/ â€¢ signals/</text>
+<text x='405' y='182' class='subtxt'>Snappy Compression, Partitioned</text>
+<rect x='295' y='210' width='220' height='90' class='box-slate'/>
+<text x='405' y='233' class='txt'>PostgreSQL 15 ACID RDBMS</text>
+<text x='405' y='251' class='subtxt'>Alembic Migrations â€¢ 6 Tables</text>
+<text x='405' y='269' class='subtxt'>assets, prices, features, signals,</text>
+<text x='405' y='287' class='subtxt'>trades, portfolio_metrics</text>
+
+<rect x='550' y='60' width='250' height='260' class='card'/>
+<text x='675' y='85' class='header'>3. Feature Engineering</text>
+<rect x='565' y='105' width='220' height='45' class='box-indigo'/>
+<text x='675' y='126' class='txt'>Trend & Momentum (13)</text>
+<text x='675' y='142' class='subtxt'>SMA 5..200, EMA 10..50, RSI, MACD</text>
+<rect x='565' y='160' width='220' height='45' class='box-indigo'/>
+<text x='675' y='181' class='txt'>Volatility & Volume (13)</text>
+<text x='675' y='197' class='subtxt'>Rolling Ïƒ, ATR, BB-Width, Z-Score, OBV</text>
+<rect x='565' y='215' width='220' height='45' class='box-indigo'/>
+<text x='675' y='236' class='txt'>Forward Return Targets</text>
+<text x='675' y='252' class='subtxt'>1-day, 5-day, 10-day (No Lookahead)</text>
+
+<rect x='820' y='60' width='230' height='260' class='card'/>
+<text x='935' y='85' class='header'>4. Machine Learning & Tracking</text>
+<rect x='835' y='105' width='200' height='45' class='box-amber'/>
+<text x='935' y='126' class='txt'>Chronological Splitter</text>
+<text x='935' y='142' class='subtxt'>70% Train, 15% Val, 15% Test + Embargo</text>
+<rect x='835' y='160' width='200' height='45' class='box-amber'/>
+<text x='935' y='181' class='txt'>Model Zoo (Ridge / XGB / LGBM)</text>
+<text x='935' y='197' class='subtxt'>Early Stopping, Fitted State Guard</text>
+<rect x='835' y='215' width='200' height='45' class='box-amber'/>
+<text x='935' y='236' class='txt'>MLflow Tracking Engine</text>
+<text x='935' y='252' class='subtxt'>Port 5001 â€¢ SQLite Backend</text>
+
+<rect x='30' y='350' width='240' height='290' class='card'/>
+<text x='150' y='375' class='header'>5. Strategy Signal Engine</text>
+<rect x='45' y='400' width='210' height='55' class='box-slate'/>
+<text x='150' y='422' class='txt'>Threshold Signals</text>
+<text x='150' y='440' class='subtxt'>BUY: rÌ‚ &gt; +Ï„, SELL: rÌ‚ &lt; -Ï„ (Ï„=0.5%)</text>
+<rect x='45' y='470' width='210' height='55' class='box-slate'/>
+<text x='150' y='492' class='txt'>Cross-Sectional Rank Signals</text>
+<text x='150' y='510' class='subtxt'>Top-N Long / Bottom-N Short</text>
+<rect x='45' y='540' width='210' height='55' class='box-slate'/>
+<text x='150' y='562' class='txt'>Signal Protocol Interface</text>
+<text x='150' y='580' class='subtxt'>Deterministic Tie-Breaking</text>
+
+<rect x='290' y='350' width='260' height='290' class='card'/>
+<text x='420' y='375' class='header'>6. Backtesting Engine</text>
+<rect x='305' y='400' width='230' height='55' class='box-emerald'/>
+<text x='420' y='422' class='txt'>Execution Model & Slippage</text>
+<text x='420' y='440' class='subtxt'>Entry = P(1+s), Exit = P(1-s), Fee=0.10%</text>
+<rect x='305' y='470' width='230' height='55' class='box-emerald'/>
+<text x='420' y='492' class='txt'>Position Manager</text>
+<text x='420' y='510' class='subtxt'>Cap Constraint (5% max position)</text>
+<rect x='305' y='540' width='230' height='55' class='box-emerald'/>
+<text x='420' y='562' class='txt'>Portfolio Simulator</text>
+<text x='420' y='580' class='subtxt'>Shared Cash Pool, Daily MTM</text>
+
+<rect x='570' y='350' width='240' height='290' class='card'/>
+<text x='690' y='375' class='header'>7. Portfolio Construction</text>
+<rect x='585' y='400' width='210' height='60' class='box-teal'/>
+<text x='690' y='423' class='txt'>Equal-Weight Allocator</text>
+<text x='690' y='441' class='subtxt'>1/N Capital Partitioning</text>
+<rect x='585' y='475' width='210' height='60' class='box-teal'/>
+<text x='690' y='498' class='txt'>Inverse-Volatility Allocator</text>
+<text x='690' y='516' class='subtxt'>Risk Parity Baseline</text>
+<rect x='585' y='550' width='210' height='60' class='box-teal'/>
+<text x='690' y='573' class='txt'>Mean-Variance Optimizer</text>
+<text x='690' y='591' class='subtxt'>PyPortfolioOpt Quadratic Utility</text>
+
+<rect x='830' y='350' width='220' height='290' class='card'/>
+<text x='940' y='375' class='header'>8. Analytics & Dashboard</text>
+<rect x='845' y='400' width='190' height='60' class='box-indigo'/>
+<text x='940' y='423' class='txt'>Risk & Return Metrics</text>
+<text x='940' y='441' class='subtxt'>Sharpe, Sortino, Calmar, Max DD</text>
+<rect x='845' y='475' width='190' height='60' class='box-indigo'/>
+<text x='940' y='498' class='txt'>Benchmark Comparison</text>
+<text x='940' y='516' class='subtxt'>vs NIFTY 50 Benchmark Index</text>
+<rect x='845' y='550' width='190' height='60' class='box-indigo'/>
+<text x='940' y='573' class='txt'>Streamlit 4-Page App</text>
+<text x='940' y='591' class='subtxt'>Allocation, Trades, Metrics, Plots</text>
+
+<line x1='260' y1='170' x2='295' y2='170' class='arrow'/>
+<line x1='515' y1='170' x2='565' y2='170' class='arrow'/>
+<line x1='785' y1='170' x2='835' y2='170' class='arrow'/>
+<line x1='270' y1='480' x2='305' y2='480' class='arrow'/>
+<line x1='550' y1='480' x2='585' y2='480' class='arrow'/>
+<line x1='810' y1='480' x2='845' y2='480' class='arrow'/>
+</svg></body></html>

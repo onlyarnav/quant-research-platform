@@ -1,0 +1,91 @@
+﻿<!DOCTYPE html><html><head><meta charset='utf-8'><style>
+body { margin: 0; padding: 20px; background: white; font-family: 'Times New Roman', serif; }
+.dash-card { fill: #f8fafc; stroke: #64748b; stroke-width: 1.5; rx: 6px; }
+.hdr { fill: #1e3a8a; }
+.hdr-txt { fill: white; font-size: 13px; font-weight: bold; text-anchor: middle; }
+.card-txt { fill: #0f172a; font-size: 11px; }
+.arrow { stroke: #334155; stroke-width: 1.5; marker-end: url(#arrowhead); }
+</style></head><body>
+<svg viewBox='0 0 1060 550' width='1020' height='520' xmlns='http://www.w3.org/2000/svg'>
+<defs><marker id='arrowhead' markerWidth='7' markerHeight='5' refX='6' refY='2.5' orient='auto'>
+<polygon points='0 0, 7 2.5, 0 5' fill='#334155'/></marker></defs>
+<rect x='10' y='10' width='1040' height='530' fill='#ffffff' stroke='#cbd5e1' stroke-width='2' rx='8'/>
+<text x='530' y='35' font-size='16' font-weight='bold' fill='#0f172a' text-anchor='middle'>Streamlit Interactive Research Dashboard: 4-Page Modular Structure</text>
+
+<!-- Main App & Sidebar -->
+<g transform='translate(40, 60)'>
+<rect width='240' height='450' class='dash-card'/>
+<rect width='240' height='30' class='hdr' rx='4'/>
+<text x='120' y='20' class='hdr-txt'>Streamlit Main App Router</text>
+<text x='15' y='55' class='card-txt' font-weight='bold'>Sidebar Global Filters:</text>
+<text x='15' y='80' class='card-txt'>â€¢ Date Range Selector</text>
+<text x='15' y='105' class='card-txt'>â€¢ Symbol Multi-Select (NSE 500)</text>
+<text x='15' y='130' class='card-txt'>â€¢ Benchmark Index (NIFTY 50)</text>
+<text x='15' y='155' class='card-txt'>â€¢ Initial Capital: 1,000,000 INR</text>
+<text x='15' y='180' class='card-txt'>â€¢ Fee / Slippage Sliders</text>
+<line x1='15' y1='205' x2='225' y2='205' stroke='#cbd5e1'/>
+<text x='15' y='230' class='card-txt' font-weight='bold'>Data Loader Layer:</text>
+<text x='15' y='255' class='card-txt'>â€¢ In-memory Parquet caching</text>
+<text x='15' y='280' class='card-txt'>â€¢ Lazy-loading time-series</text>
+<text x='15' y='305' class='card-txt'>â€¢ Clean date index alignment</text>
+</g>
+
+<!-- Page 1: Portfolio Allocation -->
+<g transform='translate(320, 60)'>
+<rect width='340' height='210' class='dash-card'/>
+<rect width='340' height='28' fill='#0f766e' rx='4'/>
+<text x='170' y='19' class='hdr-txt'>Page 1: Portfolio Allocation</text>
+<text x='15' y='50' class='card-txt' font-weight='bold'>Allocation Engines:</text>
+<text x='15' y='72' class='card-txt'>â€¢ Equal-Weight Allocation (1/N)</text>
+<text x='15' y='94' class='card-txt'>â€¢ Inverse-Volatility Weighted Allocation</text>
+<text x='15' y='116' class='card-txt'>â€¢ Markowitz Mean-Variance Optimization (PyPortfolioOpt)</text>
+<text x='15' y='145' class='card-txt' font-weight='bold'>Interactive Visualizations:</text>
+<text x='15' y='167' class='card-txt'>â€¢ Interactive Plotly Asset Weight Bar Chart</text>
+<text x='15' y='189' class='card-txt'>â€¢ Efficient Frontier Curve with Max Sharpe Tangency</text>
+</g>
+
+<!-- Page 2: Trade Blotter -->
+<g transform='translate(690, 60)'>
+<rect width='330' height='210' class='dash-card'/>
+<rect width='330' height='28' fill='#b45309' rx='4'/>
+<text x='165' y='19' class='hdr-txt'>Page 2: Trade Blotter & Execution</text>
+<text x='15' y='50' class='card-txt' font-weight='bold'>Trade Blotter Features:</text>
+<text x='15' y='72' class='card-txt'>â€¢ Full Audit Log Table of All Executed Trades</text>
+<text x='15' y='94' class='card-txt'>â€¢ Entry/Exit Date, Fill Prices, Fees &amp; Slippage</text>
+<text x='15' y='116' class='card-txt'>â€¢ Gross vs Net PnL Breakdown</text>
+<text x='15' y='145' class='card-txt' font-weight='bold'>Summary KPI Cards:</text>
+<text x='15' y='167' class='card-txt'>â€¢ Total Trades, Win Rate %, Profit Factor</text>
+<text x='15' y='189' class='card-txt'>â€¢ Average Win / Average Loss Ratio</text>
+</g>
+
+<!-- Page 3: Benchmark Comparison -->
+<g transform='translate(320, 290)'>
+<rect width='340' height='220' class='dash-card'/>
+<rect width='340' height='28' fill='#4338ca' rx='4'/>
+<text x='170' y='19' class='hdr-txt'>Page 3: Benchmark Comparison</text>
+<text x='15' y='50' class='card-txt' font-weight='bold'>Comparative Analytics:</text>
+<text x='15' y='72' class='card-txt'>â€¢ Cumulative Strategy Equity vs NIFTY 50 Index</text>
+<text x='15' y='94' class='card-txt'>â€¢ Alpha (Jensen's Alpha) &amp; Market Beta (Î²)</text>
+<text x='15' y='116' class='card-txt'>â€¢ Tracking Error &amp; Information Ratio</text>
+<text x='15' y='145' class='card-txt' font-weight='bold'>Plots &amp; Tables:</text>
+<text x='15' y='167' class='card-txt'>â€¢ Dual-Line Plotly Cumulative Return Comparison</text>
+<text x='15' y='189' class='card-txt'>â€¢ Rolling 60-Day Beta &amp; Correlation Chart</text>
+</g>
+
+<!-- Page 4: Performance Analytics -->
+<g transform='translate(690, 290)'>
+<rect width='330' height='220' class='dash-card'/>
+<rect width='330' height='28' fill='#047857' rx='4'/>
+<text x='165' y='19' class='hdr-txt'>Page 4: Performance & Risk Analytics</text>
+<text x='15' y='50' class='card-txt' font-weight='bold'>Institutional Risk Ratios:</text>
+<text x='15' y='72' class='card-txt'>â€¢ Annualized Return &amp; Annualized Volatility</text>
+<text x='15' y='94' class='card-txt'>â€¢ Sharpe Ratio (Rf = 7.0% Indian G-Sec Yield)</text>
+<text x='15' y='116' class='card-txt'>â€¢ Sortino Ratio (Downside Deviation Focus)</text>
+<text x='15' y='138' class='card-txt'>â€¢ Calmar Ratio &amp; Maximum Drawdown</text>
+<text x='15' y='165' class='card-txt' font-weight='bold'>Risk Charts:</text>
+<text x='15' y='187' class='card-txt'>â€¢ Underwater Drawdown Area Chart (%)</text>
+</g>
+
+<line x1='280' y1='150' x2='320' y2='150' class='arrow'/>
+<line x1='280' y1='380' x2='320' y2='380' class='arrow'/>
+</svg></body></html>

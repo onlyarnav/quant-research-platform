@@ -1,0 +1,118 @@
+﻿<!DOCTYPE html><html><head><meta charset='utf-8'><style>
+body { margin: 0; padding: 20px; background: white; font-family: 'Times New Roman', serif; }
+.entity { fill: #f8fafc; stroke: #1e3a8a; stroke-width: 1.5; rx: 4px; }
+.ent-hdr { fill: #1e3a8a; }
+.ent-txt { fill: white; font-size: 13px; font-weight: bold; text-anchor: middle; }
+.row-pk { font-size: 11px; fill: #b91c1c; font-weight: bold; }
+.row-fk { font-size: 11px; fill: #1d4ed8; font-weight: bold; }
+.row-txt { font-size: 11px; fill: #334155; }
+.rel-line { stroke: #475569; stroke-width: 1.5; stroke-dasharray: 4; }
+</style></head><body>
+<svg viewBox='0 0 1060 680' width='1020' height='650' xmlns='http://www.w3.org/2000/svg'>
+<rect x='10' y='10' width='1040' height='660' fill='#ffffff' stroke='#cbd5e1' stroke-width='2' rx='8'/>
+<text x='530' y='35' font-size='16' font-weight='bold' fill='#0f172a' text-anchor='middle'>PostgreSQL 15 Relational Schema: 6 Core Tables & Constraints</text>
+
+<!-- Assets Table -->
+<g transform='translate(40, 60)'>
+<rect width='280' height='240' class='entity'/>
+<rect width='280' height='30' class='ent-hdr' rx='4'/>
+<text x='140' y='20' class='ent-txt'>assets</text>
+<text x='15' y='50' class='row-pk'>PK  id : Integer (Autoincrement)</text>
+<text x='15' y='70' class='row-txt'>UQ  symbol : String(50)</text>
+<text x='15' y='90' class='row-txt'>    name : String(255)</text>
+<text x='15' y='110' class='row-txt'>    asset_class : String(50)</text>
+<text x='15' y='130' class='row-txt'>UQ  exchange : String(50)</text>
+<text x='15' y='150' class='row-txt'>    currency : String(20)</text>
+<text x='15' y='170' class='row-txt'>    sector : String(100) (Nullable)</text>
+<text x='15' y='190' class='row-txt'>    is_active : Boolean</text>
+<text x='15' y='210' class='row-txt'>    created_at, updated_at : DateTimeTZ</text>
+<text x='15' y='230' class='row-txt'>* UQ(symbol, exchange), Index(symbol)</text>
+</g>
+
+<!-- Prices Table -->
+<g transform='translate(380, 60)'>
+<rect width='300' height='240' class='entity'/>
+<rect width='300' height='30' class='ent-hdr' rx='4'/>
+<text x='150' y='20' class='ent-txt'>prices</text>
+<text x='15' y='50' class='row-pk'>PK  id : Integer (Autoincrement)</text>
+<text x='15' y='70' class='row-fk'>FK  symbol : String(50)</text>
+<text x='15' y='90' class='row-txt'>UQ  date : DateTimeTZ</text>
+<text x='15' y='110' class='row-txt'>    open, high, low, close : Float</text>
+<text x='15' y='130' class='row-txt'>    adj_close : Float</text>
+<text x='15' y='150' class='row-txt'>    volume : BigInteger</text>
+<text x='15' y='170' class='row-txt'>    returns_simple, returns_log : Float</text>
+<text x='15' y='190' class='row-txt'>    created_at : DateTimeTZ</text>
+<text x='15' y='210' class='row-txt'>* UQ(symbol, date), Index(symbol, date)</text>
+<text x='15' y='230' class='row-txt'>* Check: high >= low, volume >= 0</text>
+</g>
+
+<!-- Features Table -->
+<g transform='translate(740, 60)'>
+<rect width='280' height='240' class='entity'/>
+<rect width='280' height='30' class='ent-hdr' rx='4'/>
+<text x='140' y='20' class='ent-txt'>features</text>
+<text x='15' y='50' class='row-pk'>PK  id : Integer (Autoincrement)</text>
+<text x='15' y='70' class='row-fk'>FK  symbol : String(50)</text>
+<text x='15' y='90' class='row-txt'>UQ  date : DateTimeTZ</text>
+<text x='15' y='110' class='row-txt'>UQ  feature_name : String(50)</text>
+<text x='15' y='130' class='row-txt'>    feature_value : Float</text>
+<text x='15' y='150' class='row-txt'>    created_at : DateTimeTZ</text>
+<text x='15' y='180' class='row-txt'>* UQ(symbol, date, feature_name)</text>
+<text x='15' y='200' class='row-txt'>* Index(symbol, date)</text>
+<text x='15' y='220' class='row-txt'>* 26 canonical technical indicators</text>
+</g>
+
+<!-- Signals Table -->
+<g transform='translate(40, 360)'>
+<rect width='280' height='260' class='entity'/>
+<rect width='280' height='30' class='ent-hdr' rx='4'/>
+<text x='140' y='20' class='ent-txt'>signals</text>
+<text x='15' y='50' class='row-pk'>PK  id : Integer (Autoincrement)</text>
+<text x='15' y='70' class='row-fk'>FK  symbol : String(50)</text>
+<text x='15' y='90' class='row-txt'>UQ  date : DateTimeTZ</text>
+<text x='15' y='110' class='row-txt'>UQ  signal_type : String(50)</text>
+<text x='15' y='130' class='row-txt'>    signal_value : Integer (-1, 0, 1)</text>
+<text x='15' y='150' class='row-txt'>    confidence : Float (|rÌ‚|)</text>
+<text x='15' y='170' class='row-txt'>    horizon_days : Integer (1, 5, 10)</text>
+<text x='15' y='190' class='row-txt'>    created_at : DateTimeTZ</text>
+<text x='15' y='220' class='row-txt'>* UQ(symbol, date, signal_type)</text>
+<text x='15' y='240' class='row-txt'>* Supports Threshold &amp; Rank</text>
+</g>
+
+<!-- Trades Table -->
+<g transform='translate(380, 360)'>
+<rect width='300' height='260' class='entity'/>
+<rect width='300' height='30' class='ent-hdr' rx='4'/>
+<text x='150' y='20' class='ent-txt'>trades</text>
+<text x='15' y='50' class='row-pk'>PK  id : Integer (Autoincrement)</text>
+<text x='15' y='70' class='row-fk'>FK  symbol : String(50)</text>
+<text x='15' y='90' class='row-txt'>    entry_date, exit_date : DateTimeTZ</text>
+<text x='15' y='110' class='row-txt'>    entry_price, exit_price : Float</text>
+<text x='15' y='130' class='row-txt'>    quantity : Float</text>
+<text x='15' y='150' class='row-txt'>    side : String(10) ('long')</text>
+<text x='15' y='170' class='row-txt'>    transaction_cost, slippage : Float</text>
+<text x='15' y='190' class='row-txt'>    gross_pnl, net_pnl : Float</text>
+<text x='15' y='210' class='row-txt'>    status : String(20) ('closed')</text>
+<text x='15' y='230' class='row-txt'>    created_at : DateTimeTZ</text>
+<text x='15' y='250' class='row-txt'>* Append-only execution audit log</text>
+</g>
+
+<!-- Portfolio Metrics Table -->
+<g transform='translate(740, 360)'>
+<rect width='280' height='260' class='entity'/>
+<rect width='280' height='30' class='ent-hdr' rx='4'/>
+<text x='140' y='20' class='ent-txt'>portfolio_metrics</text>
+<text x='15' y='50' class='row-pk'>PK  id : Integer (Autoincrement)</text>
+<text x='15' y='70' class='row-txt'>UQ  date : DateTimeTZ</text>
+<text x='15' y='90' class='row-txt'>UQ  portfolio_name : String(50)</text>
+<text x='15' y='110' class='row-txt'>    cash, invested_value : Float</text>
+<text x='15' y='130' class='row-txt'>    total_value : Float</text>
+<text x='15' y='150' class='row-txt'>    daily_return : Float</text>
+<text x='15' y='170' class='row-txt'>    cumulative_return : Float</text>
+<text x='15' y='190' class='row-txt'>    drawdown, max_drawdown : Float</text>
+<text x='15' y='210' class='row-txt'>    created_at : DateTimeTZ</text>
+<text x='15' y='235' class='row-txt'>* UQ(date, portfolio_name)</text>
+<text x='15' y='250' class='row-txt'>* Mark-to-market daily snapshots</text>
+</g>
+
+</svg></body></html>
