@@ -38,6 +38,7 @@ data/signals/
 data/backtests/
 data/pipeline_runs/
 data/universe/*.csv
+!data/universe/nifty500.csv
 
 # Keep folder structure
 !data/raw/**/.gitkeep
